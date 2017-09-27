@@ -1,0 +1,38 @@
+players:
+  player0:
+    working_dir: ../client/
+    stdout: ./stdout0.txt
+    stderr: ./stderr0.txt
+  player1:
+    working_dir: ../client/
+    stdout: ./stdout1.txt
+    stderr: ./stderr1.txt
+  player2:
+    working_dir: ../client/
+    stdout: ./stdout2.txt
+    stderr: ./stderr2.txt
+  player3:
+    working_dir: ../client/
+    stdout: ./stdout3.txt
+    stderr: ./stderr3.txt
+  player4:
+    working_dir: ../client/
+    stdout: ./stdout4.txt
+    stderr: ./stderr4.txt
+controller:
+  ratings_file: ./example_ratings_file.csv
+  config_file: example_torcs_config.xml
+  server_stdout: server_out.txt
+  server_stderr: server_err.txt
+  result_path: ../../../.torcs/results/
+  player_name_to_ip:
+     scr_server 1: 3001
+     scr_server 2: 3002
+     scr_server 3: 3003
+     scr_server 4: 3004
+     scr_server 5: 3005
+     scr_server 6: 3006
+     scr_server 7: 3007
+     scr_server 8: 3008
+     scr_server 9: 3009
+     scr_server 10: 3010

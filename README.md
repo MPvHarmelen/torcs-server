@@ -28,8 +28,7 @@ To install a patched version of Torcs, download version 1.3.4 (or 1.3.7?) and [t
 
 ... (documentation missing)
 
-# File formats
-## Ratings file
+# Ratings file
 The ratings file used in `torcs_tournament.Controller` must be a csv file with lines containing the group token and (optionally) the player rating. If no rating is given the value `elo.INITIAL` is used. A token may appear only once in the file. An example file would look as follows:
 
 ```
@@ -38,3 +37,9 @@ random_token3
 random_token5,400
 random_token6,400
 ```
+
+# Running the system
+If not settings are changed
+
+# To Do
+ -[ ] Read player names from torcs config file and choose ports accordingly in `Controller.race_once`

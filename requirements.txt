@@ -1,3 +1,4 @@
 elo
 beautifulsoup4
 lxml
+pyyaml
