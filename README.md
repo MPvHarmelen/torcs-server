@@ -41,5 +41,10 @@ random_token6,400
 # Running the system
 If not settings are changed
 
+# TORCS configuration file
+The easiest way to create a TORCS configuration file is to start TORCS (run `torcs`) and configure a race using the UI. The configuration file can now be found under `~/.torcs/config/raceman/<name-of-race-type>.xml`.
+
+For the section `Drivers` the section numbering determines the racing order, while the `idx` attribute determines "which" SCR server is used, thus which port number is used. The SCR server uses port `300{idx}`, where `idx` ranges from 0 to 9.
+
 # To Do
- -[ ] Read player names from torcs config file and choose ports accordingly in `Controller.race_once`
+ - [ ] Read player names from torcs config file and choose ports accordingly in `Controller.race_once`
