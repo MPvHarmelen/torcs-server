@@ -9,3 +9,9 @@ libalut-dev
 libxmu-dev
 libxmu-headers
 libxmu6
+libxrender1
+libxrender-dev
+libxrandr-dev
+libpng16-dev
+libvorbis-dev
+libxi-dev
