@@ -425,7 +425,7 @@ class Controller(object):
 
         finally:
 
-            logger.info("Stopping..")
+            logger.info("Stopping...")
 
             # Exit running processes
             procs = [server_process] + player_processes
