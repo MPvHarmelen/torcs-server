@@ -5,6 +5,7 @@ import os
 import csv
 import time
 import shutil
+import pathlib
 import datetime
 import subprocess
 from collections import OrderedDict
@@ -407,7 +408,7 @@ class Controller(object):
                     stdout=stdout,
                     stderr=stderr,
                 ))
-                logger.info("Started {}".format(player))
+                logger.debug("Started {}".format(player))
 
             # Wait for server
             logger.info("Waiting for TORCS to finish...")
@@ -432,7 +433,7 @@ class Controller(object):
             # Time's up
             for proc in procs:
                 if proc.poll() is None:
-                    logger.info("Killing {}".format(proc))
+                    logger.warning("Killing {}".format(proc))
                     proc.kill()
 
             # Double check
@@ -446,7 +447,7 @@ class Controller(object):
 
             # Close all open files
             for fd in open_files:
-                logger.info("Closing {}".format(fd.name))
+                logger.debug("Closing {}".format(fd.name))
                 try:
                     fd.close()
                 except Exception as e:
