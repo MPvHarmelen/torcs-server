@@ -423,6 +423,9 @@ class Controller(object):
             server_process.wait()
 
         finally:
+
+            logger.info("Stopping..")
+
             # Exit running processes
             procs = [server_process] + player_processes
 
@@ -479,6 +482,7 @@ class Controller(object):
             )
 
         # Find the correct results file
+        logger.debug("Result path: {}".format(self.result_path))
         out_dir = os.path.join(
             self.result_path,
             '.'.join(self.config_file.split('.')[:-1])  # remove extension
