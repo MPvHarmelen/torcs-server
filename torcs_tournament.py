@@ -486,7 +486,8 @@ class Controller(object):
         logger.debug("Result path: {}".format(self.result_path))
         out_dir = os.path.join(
             self.result_path,
-            '.'.join(self.config_file.split('.')[:-1])  # remove extension
+            # remove head path and extension
+            '.'.join(os.path.split(self.config_file)[1].split('.')[:-1])
         )
 
         out_base = sorted(os.listdir(out_dir))[-1]
