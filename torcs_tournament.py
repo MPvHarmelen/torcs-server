@@ -574,7 +574,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=args.level)
     controller = Controller.load_config(args.config_file)
     controller.race_tokens(
-        ['martin', 'player1', 'player2', 'player3', 'player4']
+        # ['martin', 'player1', 'player2', 'player3', 'player4']
+        ['martin']
     )
     logger.warning("I'm still racing a hard coded set of teams.")
     controller.rater.save_ratings()
