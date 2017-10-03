@@ -349,7 +349,7 @@ class Controller(object):
         if len(drivers) != len(players):
             raise ValueError(
                 "{nplay} players where given, but {file} specifies {ndriv} "
-                "drivers}".format(
+                "drivers".format(
                     nplay=len(players),
                     ndriv=len(drivers),
                     file=self.config_file
