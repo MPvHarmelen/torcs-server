@@ -518,7 +518,28 @@ class Controller(object):
         return controller
 
 
+class QueueCreator(object):
+    @staticmethod
+    def touch(filename):
+        """
+        Touch a file.
+
+        I.E. create it if it does not exist or change the last modified time
+        to the current time if it does.
+        """
+        pathlib.Path(filename).touch()
+
+    @staticmethod
+    def get_last_modified(filename):
+        return os.path.getmtime(filename)
+
+
 if __name__ == '__main__':
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument('config_file')
+    parser.add_argument('-l', '--level', default='INFO')
+    args = parser.parse_args()
     # players = [
     #     Player(1),
     #     Player(2),
@@ -536,7 +557,10 @@ if __name__ == '__main__':
     # fh.restart()
     # fh.race_once('foo')
     # fh.save_ratings()
-    logging.basicConfig(level='INFO')
-    controller = Controller.load_config('./example_config.yml')
-    controller.race_tokens('player' + str(i) for i in range(5))
+    logging.basicConfig(level=args.level)
+    controller = Controller.load_config(args.config_file)
+    controller.race_tokens(
+        ['martin', 'player1', 'player2', 'player3', 'player4']
+    )
+    logger.warning("I'm still racing a hard coded set of teams.")
     controller.rater.save_ratings()
