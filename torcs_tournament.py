@@ -232,6 +232,7 @@ class Controller(object):
         self.driver_to_port = driver_to_port
         self.rater_backup_filename = rater_backup_filename
         self.shutdown_wait = shutdown_wait
+        logger.debug("Result path: {}".format(self.result_path))
 
     def timestamp(self):
         return datetime.datetime.now().strftime(self.timestamp_format)
@@ -452,7 +453,7 @@ class Controller(object):
                 if proc.poll() is None:
                     logger.warning(
                         "The following process could not be killed: {}".format(
-                            proc
+                            proc.args
                         )
                     )
 
