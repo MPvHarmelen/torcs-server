@@ -212,6 +212,7 @@ class Controller(object):
                     ('scr_server 9', 3009),
                     ('scr_server 10', 3010),
                  ]),
+                 rater_backup_filename=None,
                  shutdown_wait=1):
         """
         Orchestrate the races and save the ratings.
@@ -228,6 +229,7 @@ class Controller(object):
         self.result_filename_format = result_filename_format
         self.timestamp_format = timestamp_format
         self.driver_to_port = driver_to_port
+        self.rater_backup_filename = rater_backup_filename
         self.shutdown_wait = shutdown_wait
 
     def timestamp(self):
@@ -495,6 +497,10 @@ class Controller(object):
         # Update ratings according to ranking
         ranked_drivers = self.read_ranking(out_file)
         self.rater.adjust_all(map(driver_to_player.get, ranked_drivers))
+        if self.rater_backup_filename is not None:
+            self.rater.save_ratings(
+                self.rater_backup_filename.format(timestamp=self.timestamp())
+            )
 
     @staticmethod
     def load_config(config_file):
