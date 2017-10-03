@@ -410,6 +410,14 @@ class Controller(object):
                 ))
                 logger.debug("Started {}".format(player))
 
+            # Check no one crashed in the mean time
+            for proc in player_processes:
+                if proc.poll() is not None:
+                    raise subprocess.CalledProcessError(
+                        proc.returncode,
+                        proc.args
+                    )
+
             # Wait for server
             logger.info("Waiting for TORCS to finish...")
             server_process.wait()
