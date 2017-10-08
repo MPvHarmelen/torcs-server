@@ -375,14 +375,6 @@ class Controller(object):
         The output can be found under:
             <torcs installation directory>/results
         """
-
-        # ENSURE OUTPUT DIR EXISTS! -- TORCS does this automatically
-        # out_dir = os.path.join(
-        #     self.result_path,
-        #     '.'.join(self.config_file.split('.')[:-1])  # remove extension
-        # )
-        # if not os.path.isdir(out_dir):
-        #     os.mkdir(out_dir)
         players = list(players)
 
         if len(self.drivers) != len(players):
