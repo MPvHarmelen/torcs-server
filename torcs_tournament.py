@@ -196,14 +196,6 @@ class Rater(object):
         for player, rating in zip(ranking, new_ratings):
             player.rating = rating
 
-    # def configure_player(self, token, **dic):
-    #     if token in self.player_map:
-    #         player = self.player_map[token]
-    #         for key, value in dic.items():
-    #             setattr(player, key, value)
-    #     else:
-    #         self.player_map[token] = Player(token, **dic)
-
     def restart(self):
         for player in self.player_map.values():
             player.init_rating()
