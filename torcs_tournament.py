@@ -342,14 +342,14 @@ class Controller(object):
         """Restart the tournament, making all ratings equal."""
         self.rater.restart()
 
-    def race_and_save(self):
+    def race_and_save(self, simulate=False):
         """
         Run a race (see `Controller.race`) and save the ratings.
         """
-        self.race()
+        self.race(simulate=simulate)
         self.rater.save_ratings()
 
-    def race(self):
+    def race(self, simulate=False):
         """
         Run a race
 
@@ -361,13 +361,16 @@ class Controller(object):
         logger.info("Racing: {}".format(', '.join(
             repr(player.token) for player in players
         )))
-        self.race_once(players)
+        self.race_once(players, simulate=simulate)
         self.queue.requeue(players)
 
-    def race_tokens(self, tokens):
-        return self.race_once(map(self.rater.player_map.get, tokens))
+    def race_tokens(self, tokens, simulate=False):
+        return self.race_once(
+            map(self.rater.player_map.get, tokens),
+            simulate=simulate
+        )
 
-    def race_once(self, players):
+    def race_once(self, players, simulate=False):
         """
         Run one race with TORCS and the given players.
 
@@ -403,6 +406,7 @@ class Controller(object):
         driver_to_player = OrderedDict(zip(self.drivers, players))
 
         open_files = []
+        processes = []
 
         try:
             # Start server
@@ -418,15 +422,20 @@ class Controller(object):
             open_files.append(server_stderr)
 
             logger.info("Starting TORCS...")
-            server_process = subprocess.Popen(
-                ['torcs', '-r', os.path.abspath(self.config_file)],
-                stdout=server_stdout,
-                stderr=server_stderr,
-            )
+            if simulate:
+                logger.warning(
+                    "This is a simulation! No processes are started."
+                )
+            else:
+                server_process = subprocess.Popen(
+                    ['torcs', '-r', os.path.abspath(self.config_file)],
+                    stdout=server_stdout,
+                    stderr=server_stderr,
+                )
+                processes.append(server_process)
 
             # Start players
             logger.info("Starting players...")
-            player_processes = []
             for driver, player in driver_to_player.items():
                 stdout = open(
                     path_rel_to_dir(
@@ -444,19 +453,22 @@ class Controller(object):
                     'w'
                 )
                 open_files.append(stderr)
-                player_processes.append(subprocess.Popen(
-                    map(
-                        lambda s: s.format(port=self.driver_to_port[driver]),
-                        player.start_command
-                    ),
-                    cwd=player.working_dir,
-                    stdout=stdout,
-                    stderr=stderr,
-                ))
+                if not simulate:
+                    processes.append(subprocess.Popen(
+                        map(
+                            lambda s: s.format(
+                                port=self.driver_to_port[driver]
+                            ),
+                            player.start_command
+                        ),
+                        cwd=player.working_dir,
+                        stdout=stdout,
+                        stderr=stderr,
+                    ))
                 logger.debug("Started {}".format(player))
 
             # Check no one crashed in the mean time
-            for proc in player_processes:
+            for proc in processes:
                 if proc.poll() is not None:
                     raise subprocess.CalledProcessError(
                         proc.returncode,
@@ -465,7 +477,8 @@ class Controller(object):
 
             # Wait for server
             logger.info("Waiting for TORCS to finish...")
-            server_process.wait()
+            if not simulate:
+                server_process.wait()
 
         except:
             logger.error("An error occurred, trying to stop gracefully...")
@@ -473,34 +486,33 @@ class Controller(object):
 
         finally:
             # Exit running processes
-            procs = [server_process] + player_processes
 
-            # Wait a second to give the processes some time
-            time.sleep(self.shutdown_wait)
+            if not simulate:
+                # Wait a second to give the processes some time
+                time.sleep(self.shutdown_wait)
 
-            # First be nice
-            for proc in procs:
-                if proc.poll() is None:
-                    logger.info("Terminating {}".format(proc))
-                    proc.terminate()
+                # First be nice
+                for proc in processes:
+                    if proc.poll() is None:
+                        logger.info("Terminating {}".format(proc))
+                        proc.terminate()
 
-            # Wait a second to give the processes some time
-            time.sleep(self.shutdown_wait)
+                # Wait a second to give the processes some time
+                time.sleep(self.shutdown_wait)
 
-            # Time's up
-            for proc in procs:
-                if proc.poll() is None:
-                    logger.warning("Killing {}".format(proc))
-                    proc.kill()
+                # Time's up
+                for proc in processes:
+                    if proc.poll() is None:
+                        logger.warning("Killing {}".format(proc))
+                        proc.kill()
 
-            # Double check
-            for proc in procs:
-                if proc.poll() is None:
-                    logger.error(
-                        "The following process could not be killed: {}".format(
-                            proc.args
+                # Double check
+                for proc in processes:
+                    if proc.poll() is None:
+                        logger.error(
+                            "The following process could not be killed: {}"
+                            .format(proc.args)
                         )
-                    )
 
             # Close all open files
             for fd in open_files:
@@ -651,6 +663,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('config_file')
     parser.add_argument('-l', '--level', default='INFO')
+    parser.add_argument('-s', '--simulate', action="store_true")
     args = parser.parse_args()
 
     # Initialise logging
@@ -658,5 +671,5 @@ if __name__ == '__main__':
 
     # Race
     controller = Controller.load_config(args.config_file)
-    controller.race_and_save()
+    controller.race_and_save(simulate=args.simulate)
     logger.info("Done!")
