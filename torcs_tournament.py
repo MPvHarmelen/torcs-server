@@ -67,11 +67,10 @@ class Player(object):
         else:
             self.init_rating()
 
-    # def __str__(self):
-    #     return self.__class__.__name__ + "({self.token!r}, " \
-    #         "{self.rating!r}, " \
-    #         "{self.start_command!r}, " \
-    #         ")".format(self=self)
+    def __str__(self):
+        return self.__class__.__name__ + "({self.token!r}, " \
+            "{self.rating!r}, " \
+            ")".format(self=self)
 
     def __repr__(self):
         return self.__class__.__name__ + "({self.token!r}, " \
