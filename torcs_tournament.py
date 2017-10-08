@@ -159,7 +159,15 @@ class Rater(object):
         return li
 
     def save_ratings(self, filename=None):
+        """
+        Save the ratings of all players to a file.
+
+        If a filename is specified, that file is used, otherwise
+        `self.filename` is used. If neither is specified, a ValueError is
+        raised.
+        """
         filename = self.filename_check(filename)
+        logger.info("Saving ratings in {}".format(filename))
         with open(filename, 'w') as fd:
             csv.writer(fd).writerows(
                 sorted(
@@ -203,7 +211,7 @@ class Rater(object):
 
 
 class Controller(object):
-    def __init__(self, rater,
+    def __init__(self, rater, queue,
                  config_file='example_torcs_config.xml',
                  server_stdout='{timestamp}-server_out.txt',
                  server_stderr='{timestamp}-server_err.txt',
@@ -232,6 +240,7 @@ class Controller(object):
         when running `save_ratings`.
         """
         self.rater = rater
+        self.queue = queue
         self.config_file = config_file
         self.server_stdout = server_stdout
         self.server_stderr = server_stderr
@@ -242,6 +251,9 @@ class Controller(object):
         self.rater_backup_filename = rater_backup_filename
         self.shutdown_wait = shutdown_wait
         logger.debug("Result path: {}".format(self.result_path))
+
+        # Read drivers from config
+        self.drivers = self.read_lineup(self.config_file)
 
     def timestamp(self):
         return datetime.datetime.now().strftime(self.timestamp_format)
@@ -331,6 +343,28 @@ class Controller(object):
         """Restart the tournament, making all ratings equal."""
         self.rater.restart()
 
+    def race_and_save(self):
+        """
+        Run a race (see `Controller.race`) and save the ratings.
+        """
+        self.race()
+        self.rater.save_ratings()
+
+    def race(self):
+        """
+        Run a race
+
+        Automatically determine the number of players to be raced and ask the
+        queue which players are next. Race the players, save the results and
+        update the queue.
+        """
+        players = self.queue.first_n(len(self.drivers))
+        logger.info("Racing: {}".format(', '.join(
+            repr(player.token) for player in players
+        )))
+        self.race_once(players)
+        self.queue.requeue(players)
+
     def race_tokens(self, tokens):
         return self.race_once(map(self.rater.player_map.get, tokens))
 
@@ -338,10 +372,14 @@ class Controller(object):
         """
         Run one race with TORCS and the given players.
 
+        Also make a backup of the ratings if `self.rater_backup_filename` is
+        not None.
+
         NB. Please make sure the number of players given matches the specified
             number of players in the configuration file of this Controller.
 
-        The output can be found under your torcs installation directory/results
+        The output can be found under:
+            <torcs installation directory>/results
         """
 
         # ENSURE OUTPUT DIR EXISTS! -- TORCS does this automatically
@@ -353,19 +391,17 @@ class Controller(object):
         #     os.mkdir(out_dir)
         players = list(players)
 
-        # Read drivers from config
-        drivers = self.read_lineup(self.config_file)
-        if len(drivers) != len(players):
+        if len(self.drivers) != len(players):
             raise ValueError(
                 "{nplay} players where given, but {file} specifies {ndriv} "
                 "drivers".format(
                     nplay=len(players),
-                    ndriv=len(drivers),
+                    ndriv=len(self.drivers),
                     file=self.config_file
                 )
             )
 
-        driver_to_player = OrderedDict(zip(drivers, players))
+        driver_to_player = OrderedDict(zip(self.drivers, players))
 
         open_files = []
 
@@ -432,10 +468,11 @@ class Controller(object):
             logger.info("Waiting for TORCS to finish...")
             server_process.wait()
 
+        except:
+            logger.error("An error occurred, trying to stop gracefully...")
+            raise
+
         finally:
-
-            logger.info("Stopping...")
-
             # Exit running processes
             procs = [server_process] + player_processes
 
@@ -460,7 +497,7 @@ class Controller(object):
             # Double check
             for proc in procs:
                 if proc.poll() is None:
-                    logger.warning(
+                    logger.error(
                         "The following process could not be killed: {}".format(
                             proc.args
                         )
@@ -473,6 +510,7 @@ class Controller(object):
                     fd.close()
                 except Exception as e:
                     logger.error(e)
+            logger.info("Success!")
 
         # Give the players the server output
         for player in players:
@@ -521,25 +559,41 @@ class Controller(object):
         # Update ratings according to ranking
         ranked_drivers = self.read_ranking(out_file)
         self.rater.adjust_all(map(driver_to_player.get, ranked_drivers))
+
+        # Make a backup if self.rater_backup_filename is given
         if self.rater_backup_filename is not None:
+            backup_filename = self.rater_backup_filename.format(
+                timestamp=self.timestamp()
+            )
+            # logger.info("Backing up ratings in {}".format(backup_filename))
             self.rater.save_ratings(
-                self.rater_backup_filename.format(timestamp=self.timestamp())
+                backup_filename
             )
 
     @staticmethod
     def load_config(config_file):
         with open(config_file) as fd:
             config = yaml.load(fd, OrderedLoader)
+        rater = Controller.load_rater(config)
+        fbq = Controller.load_fbq(config, rater.player_map.values())
+        controller = Controller(rater, fbq, **config.get('controller', {}))
+        return controller
+
+    @staticmethod
+    def load_rater(config_dic):
         rater = Rater(
             (
                 Player(token, **player_conf)
-                for token, player_conf in config['players'].items()
+                for token, player_conf in config_dic['players'].items()
             ),
-            **config.get('rater', {})
+            **config_dic.get('rater', {})
         )
         rater.read_file()
-        controller = Controller(rater, **config.get('controller', {}))
-        return controller
+        return rater
+
+    @staticmethod
+    def load_fbq(config_dic, players=()):
+        return FileBasedQueue(players, **config_dic.get('queue', {}))
 
 
 class FileBasedQueue(object):
@@ -548,7 +602,7 @@ class FileBasedQueue(object):
     file in their `working_dir`.
     """
 
-    def __init__(self, queue_filename, players):
+    def __init__(self, players, queue_filename='start.sh'):
         self.queue_filename = queue_filename
         self.players = players
 
@@ -593,34 +647,17 @@ class FileBasedQueue(object):
 
 
 if __name__ == '__main__':
+    # Parse command line arguments
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument('config_file')
     parser.add_argument('-l', '--level', default='INFO')
     args = parser.parse_args()
-    # players = [
-    #     Player(1),
-    #     Player(2),
-    #     Player(3),
-    # ]
-    # Player(4),
-    # Player(5),
-    # Player(6),
-    # Player(7),
-    # Player(8),
-    # Player(9),
 
-    # adjust_all(players)
-    # fh = Controller('example_ratings_file.csv')
-    # fh.restart()
-    # fh.race_once('foo')
-    # fh.save_ratings()
+    # Initialise logging
     logging.basicConfig(level=args.level)
+
+    # Race
     controller = Controller.load_config(args.config_file)
-    print(controller.rater.players)
-    # controller.race_tokens(
-    #     # ['martin', 'player1', 'player2', 'player3', 'player4']
-    #     ['martin']
-    # )
-    logger.warning("I'm still racing a hard coded set of teams.")
-    controller.rater.save_ratings()
+    controller.race_and_save()
+    logger.info("Done!")
