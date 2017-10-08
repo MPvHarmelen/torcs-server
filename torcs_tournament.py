@@ -547,7 +547,16 @@ class Controller(object):
         return controller
 
 
-class QueueCreator(object):
+class FileBasedQueue(object):
+    """
+    Queue players according to the last modified time of a specifically named
+    file in their `working_dir`.
+    """
+
+    def __init__(self, queue_filename, players):
+        self.queue_filename = queue_filename
+        self.players = players
+
     @staticmethod
     def touch(filename):
         """
@@ -556,11 +565,36 @@ class QueueCreator(object):
         I.E. create it if it does not exist or change the last modified time
         to the current time if it does.
         """
+        logger.debug("Touching: {}".format(filename))
         pathlib.Path(filename).touch()
+        logger.debug("Touched!")
 
     @staticmethod
     def get_last_modified(filename):
-        return os.path.getmtime(filename)
+        modified_time = os.path.getmtime(filename)
+        logger.debug("Filename: {}".format(filename))
+        logger.debug("Modified time: {}".format(modified_time))
+        return modified_time
+
+    def get_filename(self, player):
+        return os.path.join(
+            player.working_dir,
+            self.queue_filename
+        )
+
+    def first_n(self, n):
+        """
+        Get the `n` players that are first in line
+        """
+        return sorted(
+            self.players,
+            key=lambda p: self.get_last_modified(self.get_filename(p)),
+            # reverse=True,
+        )[:n]
+
+    def requeue(self, players):
+        for player in players:
+            self.touch(self.get_filename(player))
 
 
 if __name__ == '__main__':
@@ -588,9 +622,10 @@ if __name__ == '__main__':
     # fh.save_ratings()
     logging.basicConfig(level=args.level)
     controller = Controller.load_config(args.config_file)
-    controller.race_tokens(
-        # ['martin', 'player1', 'player2', 'player3', 'player4']
-        ['martin']
-    )
+    print(controller.rater.players)
+    # controller.race_tokens(
+    #     # ['martin', 'player1', 'player2', 'player3', 'player4']
+    #     ['martin']
+    # )
     logger.warning("I'm still racing a hard coded set of teams.")
     controller.rater.save_ratings()
