@@ -47,17 +47,16 @@ class Player(object):
     `start_command` is issued with `working_dir` as working directory.
     """
 
-    def __init__(self, token, rating=None,
+    def __init__(self, token, working_dir, rating=None,
                  start_command=['./start.sh', '-p', '{port}'],
-                 working_dir=None, output_dir='./output/',
+                 output_dir='./output/',
                  stdout='./{timestamp}-stdout.txt',
                  stderr='./{timestamp}-stderr.txt'):
         self.token = token
+        self.working_dir = working_dir
         self.start_command = start_command
         self.stdout = stdout
         self.stderr = stderr
-        self.working_dir = working_dir if working_dir is not None \
-            else 'drivers/' + self.token
         self.output_dir = output_dir if os.path.isabs(output_dir) \
             else os.path.join(self.working_dir, output_dir)
         if not os.path.exists(self.output_dir):
