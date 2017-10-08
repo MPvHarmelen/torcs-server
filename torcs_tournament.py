@@ -168,10 +168,6 @@ class Rater(object):
                 )
             )
 
-    # @property
-    # def players(self):
-    #     return self.player_map.values()
-
     @staticmethod
     def adjust_all(ranking):
         """
