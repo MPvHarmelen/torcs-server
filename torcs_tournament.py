@@ -89,15 +89,15 @@ class Player(object):
 
 class Rater(object):
     def __init__(self, players=(), filename=None):
-        self.players = {}
+        self.player_map = {}
         for player in players:
-            if player.token in self.players:
+            if player.token in self.player_map:
                 raise ValueError(
                     "A token may only be specified once. Token: {}".format(
                         player.token
                     )
                 )
-            self.players[player.token] = player
+            self.player_map[player.token] = player
         self.filename = filename
         if self.filename is not None:
             self.read_file()
@@ -135,7 +135,7 @@ class Rater(object):
                     "rating should be specified: {}".format(line)
                 )
             if len(line) == 2:
-                self.players[token].rating = elo.RATING_CLASS(line[1])
+                self.player_map[token].rating = elo.RATING_CLASS(line[1])
 
     @staticmethod
     def clean_line(iterable):
@@ -164,10 +164,14 @@ class Rater(object):
         with open(filename, 'w') as fd:
             csv.writer(fd).writerows(
                 sorted(
-                    ((p.token, p.rating) for p in self.players.values()),
+                    ((p.token, p.rating) for p in self.player_map.values()),
                     key=lambda p: p[1]
                 )
             )
+
+    # @property
+    # def players(self):
+    #     return self.player_map.values()
 
     @staticmethod
     def adjust_all(ranking):
@@ -191,15 +195,15 @@ class Rater(object):
             player.rating = rating
 
     # def configure_player(self, token, **dic):
-    #     if token in self.players:
-    #         player = self.players[token]
+    #     if token in self.player_map:
+    #         player = self.player_map[token]
     #         for key, value in dic.items():
     #             setattr(player, key, value)
     #     else:
-    #         self.players[token] = Player(token, **dic)
+    #         self.player_map[token] = Player(token, **dic)
 
     def restart(self):
-        for player in self.players.values():
+        for player in self.player_map.values():
             player.init_rating()
 
 
@@ -333,7 +337,7 @@ class Controller(object):
         self.rater.restart()
 
     def race_tokens(self, tokens):
-        return self.race_once(map(self.rater.players.get, tokens))
+        return self.race_once(map(self.rater.player_map.get, tokens))
 
     def race_once(self, players):
         """
