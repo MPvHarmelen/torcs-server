@@ -6,7 +6,11 @@ Useful information can be found on [this blog](http://www.xed.ch/help/torcs.html
 # Installation
 First create a patched version of Torcs, by either finding readily patched source code or patching it yourself (see [Patching](#patching).
 
-Place it anywhere (just remember where) and run the following command to install the necessary requirements (taken from [this pdf](https://arxiv.org/pdf/1304.1672.pdf) and experience).
+## Easy
+Make sure you're using a patched version of TORCS 1.3.7 and place the zip (`torcs-1.3.7-patched.zip`) in the root of this repository. Now run `./easy-install.sh`. Done!
+
+## Manual
+Place the patched source code anywhere (just remember where) and run the following command to install the necessary requirements (taken from [this pdf](https://arxiv.org/pdf/1304.1672.pdf) and experience).
 
 ```bash
 xargs sudo apt-get install < system_requirements.txt
