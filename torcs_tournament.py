@@ -621,6 +621,7 @@ class FileBasedQueue(object):
         return modified_time
 
     def get_filename(self, player):
+        """Get the full path to the queue file of a player"""
         return os.path.join(
             player.working_dir,
             self.filename
@@ -637,6 +638,12 @@ class FileBasedQueue(object):
         )[:n]
 
     def requeue(self, players):
+        """
+        Put the given players at the end of the queue
+
+        In this case this is done by touching their respective queue files
+        in the order the players are passed.
+        """
         for player in players:
             self.touch(self.get_filename(player))
 
