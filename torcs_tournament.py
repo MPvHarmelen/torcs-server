@@ -597,8 +597,8 @@ class FileBasedQueue(object):
     file in their `working_dir`.
     """
 
-    def __init__(self, players, queue_filename='start.sh'):
-        self.queue_filename = queue_filename
+    def __init__(self, players, filename='start.sh'):
+        self.filename = filename
         self.players = players
 
     @staticmethod
@@ -623,7 +623,7 @@ class FileBasedQueue(object):
     def get_filename(self, player):
         return os.path.join(
             player.working_dir,
-            self.queue_filename
+            self.filename
         )
 
     def first_n(self, n):
