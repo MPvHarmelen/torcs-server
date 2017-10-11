@@ -42,10 +42,15 @@ class ParseError(Exception):
 
 class Player(object):
     """
+    Container for player information.
+
     Every argument of `start_command` will be formatted using
         `format(port=<value>)`
 
-    `start_command` is issued with `working_dir` as working directory.
+    `start_command` is issued with `working_dir` as working directory and
+    `process_owner` as user. If `process_owner` is None, `token` will be used.
+
+    The filenames `stdout` and `stderr` are relative to `output_dir`.
     """
 
     def __init__(self, token, working_dir, rating=None,
