@@ -3,6 +3,7 @@ import logging
 
 import os
 import re
+import pwd
 import csv
 import time
 import shutil
@@ -57,12 +58,17 @@ class Player(object):
                  start_command=['./start.sh', '-p', '{port}'],
                  output_dir='./output/',
                  stdout='./{timestamp}-stdout.txt',
-                 stderr='./{timestamp}-stderr.txt'):
+                 stderr='./{timestamp}-stderr.txt',
+                 process_owner=None):
         self.token = token
         self.working_dir = working_dir
         self.start_command = start_command
         self.stdout = stdout
         self.stderr = stderr
+        self.process_owner = process_owner \
+            if process_owner is not None \
+            else self.token
+
         self.output_dir = output_dir if os.path.isabs(output_dir) \
             else os.path.join(self.working_dir, output_dir)
         if not os.path.exists(self.output_dir):
@@ -215,6 +221,7 @@ class Controller(object):
     def __init__(self, rater, queue, torcs_config_file,
                  server_stdout='{timestamp}-server_out.txt',
                  server_stderr='{timestamp}-server_err.txt',
+                 separate_player_uid=False,
                  result_path='~/.torcs/results/',
                  result_filename_format="{driver} - {base}",
                  timestamp_format='%Y-%m-%d-%H.%M',
@@ -247,6 +254,7 @@ class Controller(object):
         self.torcs_config_file = torcs_config_file
         self.server_stdout = server_stdout
         self.server_stderr = server_stderr
+        self.separate_player_uid = separate_player_uid
         self.result_path = os.path.expanduser(result_path)
         self.result_filename_format = result_filename_format
         self.timestamp_format = timestamp_format
@@ -449,7 +457,12 @@ class Controller(object):
                     'w'
                 )
                 open_files.append(stderr)
-                if not simulate:
+                if simulate:
+                    # Always simulate these functions, just to be sure they
+                    # work
+                    self.get_change_user_fn(player)
+                    self.get_player_env(player)
+                elif self.separate_player_uid:
                     processes.append(subprocess.Popen(
                         map(
                             lambda s: s.format(
@@ -457,9 +470,23 @@ class Controller(object):
                             ),
                             player.start_command
                         ),
-                        cwd=player.working_dir,
                         stdout=stdout,
                         stderr=stderr,
+                        preexec_fn=self.get_change_user_fn(player),
+                        cwd=player.working_dir,
+                        env=self.get_player_env(player)
+                    ))
+                else:
+                    processes.append(subprocess.Popen(
+                        map(
+                            lambda s: s.format(
+                                port=self.driver_to_port[driver]
+                            ),
+                            player.start_command
+                        ),
+                        stdout=stdout,
+                        stderr=stderr,
+                        cwd=player.working_dir,
                     ))
                 logger.debug("Started {}".format(player))
 
@@ -576,6 +603,47 @@ class Controller(object):
             self.rater.save_ratings(
                 backup_filename
             )
+
+    @staticmethod
+    def get_change_user_fn(player):
+        pw_record = pwd.getpwnam(player.process_owner)
+
+        def change_user():
+            logger.debug(
+                "Starting demotion. UID: {uid}, GID: {gid}".format(
+                    uid=os.getuid(),
+                    gid=os.getgid()
+                )
+            )
+            try:
+                logger.debug("Trying to set gid...")
+                os.setgid(pw_record.pw_gid)
+                logger.debug("Trying to set uid...")
+                os.setuid(pw_record.pw_uid)
+            except Exception as e:
+                logger.error(e)
+                raise
+            logger.debug(
+                "Finished demotion. UID: {uid}, GID: {gid}".format(
+                    uid=os.getuid(),
+                    gid=os.getgid()
+                )
+            )
+
+        return change_user
+
+    @staticmethod
+    def get_player_env(player):
+        # Info from https://stackoverflow.com/questions/1770209/run-child-processes-as-different-user-from-a-long-running-process/6037494#6037494  # NOQA
+        pw_record = pwd.getpwnam(player.process_owner)
+        env = os.environ.copy()
+        env['LOGNAME'] = env['USER'] = pw_record.pw_name
+        env['HOME'] = pw_record.pw_dir
+        logger.debug("ENV PWD: {}".format(env.get('PWD', None)))
+        env['PWD'] = player.working_dir
+        logger.debug("Set PWD to: {!r}".format(env['PWD']))
+
+        return env
 
     @staticmethod
     def load_config(config_file):
