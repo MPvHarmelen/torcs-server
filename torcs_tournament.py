@@ -2,6 +2,7 @@
 import logging
 
 import os
+import re
 import csv
 import time
 import shutil
@@ -573,11 +574,27 @@ class Controller(object):
 
     @staticmethod
     def load_config(config_file):
+        error_regex = re.compile(
+            r"__init__\(\) got an unexpected keyword argument '(\w+)'"
+        )
         with open(config_file) as fd:
             config = yaml.load(fd, OrderedLoader)
-        rater = Controller.load_rater(config)
-        fbq = Controller.load_fbq(config, rater.player_map.values())
-        controller = Controller(rater, fbq, **config.get('controller', {}))
+        try:
+            rater = Controller.load_rater(config)
+            fbq = Controller.load_fbq(config, rater.player_map.values())
+            controller = Controller(rater, fbq, **config.get('controller', {}))
+        except TypeError as e:
+            match = error_regex.fullmatch(e.args[0])
+            if match is not None:
+                config_key = match.groups()[0]
+                logger.debug("Match: {}".format(config_key))
+                raise ValueError(
+                    "Unexpected configuration key in {filename}: {key!r}"
+                    .format(filename=config_file, key=config_key)
+                ) from e
+            else:
+                logger.debug("No match...")
+                raise
         return controller
 
     @staticmethod
