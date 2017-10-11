@@ -414,7 +414,7 @@ class Controller(object):
             logger.info("Starting TORCS...")
             if simulate:
                 logger.warning(
-                    "This is a simulation! No processes are started."
+                    "This is a simulation! No child processes are started."
                 )
             else:
                 server_process = subprocess.Popen(
