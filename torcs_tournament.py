@@ -89,16 +89,20 @@ class Rater(object):
     def __init__(self, players=(), filename=None):
         self.player_map = {}
         for player in players:
-            if player.token in self.player_map:
-                raise ValueError(
-                    "A token may only be specified once. Token: {}".format(
-                        player.token
-                    )
-                )
-            self.player_map[player.token] = player
+            self.add_player(player)
         self.filename = filename
         if self.filename is not None:
             self.read_file()
+
+    def add_player(self, player):
+        """Add a player to this rater."""
+        if player.token in self.player_map:
+            raise ValueError(
+                "A token may only be specified once. Token: {}".format(
+                    player.token
+                )
+            )
+        self.player_map[player.token] = player
 
     def filename_check(self, filename=None):
         if filename is None:
