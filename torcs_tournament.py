@@ -206,8 +206,7 @@ class Rater(object):
 
 
 class Controller(object):
-    def __init__(self, rater, queue,
-                 config_file='example_torcs_config.xml',
+    def __init__(self, rater, queue, torcs_config_file,
                  server_stdout='{timestamp}-server_out.txt',
                  server_stderr='{timestamp}-server_err.txt',
                  result_path='~/.torcs/results/',
@@ -239,7 +238,7 @@ class Controller(object):
         """
         self.rater = rater
         self.queue = queue
-        self.config_file = config_file
+        self.torcs_config_file = torcs_config_file
         self.server_stdout = server_stdout
         self.server_stderr = server_stderr
         self.result_path = os.path.expanduser(result_path)
@@ -251,7 +250,7 @@ class Controller(object):
         logger.debug("Result path: {}".format(self.result_path))
 
         # Read drivers from config
-        self.drivers = self.read_lineup(self.config_file)
+        self.drivers = self.read_lineup(self.torcs_config_file)
 
     def timestamp(self):
         return datetime.datetime.now().strftime(self.timestamp_format)
@@ -278,8 +277,8 @@ class Controller(object):
         return list(zip(*sorted(ranks)))[1]
 
     @staticmethod
-    def read_lineup(config_file):
-        with open(config_file) as fd:
+    def read_lineup(torcs_config_file):
+        with open(torcs_config_file) as fd:
             soup = BeautifulSoup(fd, 'xml')
         drivers_sec = soup.find('section', attrs={'name': 'Drivers'})
         drivers = []
@@ -290,7 +289,7 @@ class Controller(object):
                 raise ParseError(
                     "Error parsing {file}: expected a {tag} tag with the "
                     "following attributes: {attrs!r}".format(
-                        file=config_file,
+                        file=torcs_config_file,
                         tag=tag,
                         attrs=attrs
                     )
@@ -301,7 +300,7 @@ class Controller(object):
                 raise ParseError(
                     "Error parsing {file}: all drivers are expected to be the "
                     "'{expected}' module.".format(
-                        file=config_file,
+                        file=torcs_config_file,
                         expected=expected
                     )
                 )
@@ -312,7 +311,7 @@ class Controller(object):
                 raise ParseError(
                     "Error parsing {file}: expected a {tag} tag with the "
                     "following attributes: {attrs!r}".format(
-                        file=config_file,
+                        file=torcs_config_file,
                         tag=tag,
                         attrs=attrs
                     )
@@ -322,7 +321,7 @@ class Controller(object):
                 raise ParseError(
                     "Error parsing {file}: expected {tag} to have the "
                     "attribute {attr}.".format(
-                        file=config_file,
+                        file=torcs_config_file,
                         tag=tag,
                         attr='val',
                     )
@@ -390,7 +389,7 @@ class Controller(object):
                 "drivers".format(
                     nplay=len(players),
                     ndriv=len(self.drivers),
-                    file=self.config_file
+                    file=self.torcs_config_file
                 )
             )
 
@@ -419,7 +418,7 @@ class Controller(object):
                 )
             else:
                 server_process = subprocess.Popen(
-                    ['torcs', '-r', os.path.abspath(self.config_file)],
+                    ['torcs', '-r', os.path.abspath(self.torcs_config_file)],
                     stdout=server_stdout,
                     stderr=server_stderr,
                 )
@@ -536,7 +535,7 @@ class Controller(object):
         out_dir = os.path.join(
             self.result_path,
             # remove head path and extension
-            '.'.join(os.path.split(self.config_file)[1].split('.')[:-1])
+            '.'.join(os.path.split(self.torcs_config_file)[1].split('.')[:-1])
         )
 
         out_base = sorted(os.listdir(out_dir))[-1]
