@@ -210,7 +210,7 @@ class Controller(object):
                  config_file='example_torcs_config.xml',
                  server_stdout='{timestamp}-server_out.txt',
                  server_stderr='{timestamp}-server_err.txt',
-                 result_path='../../../.torcs/results/',
+                 result_path='~/.torcs/results/',
                  result_filename_format="{driver} - {base}",
                  timestamp_format='%Y-%m-%d-%H.%M',
                  driver_to_port=OrderedDict([
@@ -233,13 +233,16 @@ class Controller(object):
         When the rating is left out of the ratings file for a token, it is
         assigned the default rating, which will be saved to the same file
         when running `save_ratings`.
+
+        N.B. `~` is only expanded to the user directory in `result_path` at
+             initialisation of the controller.
         """
         self.rater = rater
         self.queue = queue
         self.config_file = config_file
         self.server_stdout = server_stdout
         self.server_stderr = server_stderr
-        self.result_path = result_path
+        self.result_path = os.path.expanduser(result_path)
         self.result_filename_format = result_filename_format
         self.timestamp_format = timestamp_format
         self.driver_to_port = driver_to_port
