@@ -1,39 +1,23 @@
 players:
   player0:
     working_dir: ../client/
-    stdout: ./{timestamp}-stdout0.txt
-    stderr: ./{timestamp}-stderr0.txt
   player1:
-    working_dir: ../client/
-    stdout: ./{timestamp}-stdout1.txt
-    stderr: ./{timestamp}-stderr1.txt
+    working_dir: ../client (copy)/
   player2:
-    working_dir: ../client/
-    stdout: ./{timestamp}-stdout2.txt
-    stderr: ./{timestamp}-stderr2.txt
+    working_dir: ../client (another copy)/
   player3:
-    working_dir: ../client/
-    stdout: ./{timestamp}-stdout3.txt
-    stderr: ./{timestamp}-stderr3.txt
+    working_dir: ../client (3rd copy)/
   player4:
-    working_dir: ../client/
-    stdout: ./{timestamp}-stdout4.txt
-    stderr: ./{timestamp}-stderr4.txt
+    working_dir: ../client (4th copy)/
+  player4:
+    working_dir: ../client (4th copy)/
+  player5:
+    working_dir: ../client (5th copy)/
+  player6:
+    working_dir: ../client (6th copy)/
+  player7:
+    working_dir: ../client (7th copy)/
 controller:
-  config_file: ./example_torcs_config.xml
-  server_stdout: ./{timestamp}-server_out.txt
-  server_stderr: ./{timestamp}-server_err.txt
-  result_path: ../../../.torcs/results/
-  driver_to_port:
-     scr_server 1: 3001
-     scr_server 2: 3002
-     scr_server 3: 3003
-     scr_server 4: 3004
-     scr_server 5: 3005
-     scr_server 6: 3006
-     scr_server 7: 3007
-     scr_server 8: 3008
-     scr_server 9: 3009
-     scr_server 10: 3010
+  torcs_config_file: ./example_torcs_config.xml
 rater:
   filename: ./example_ratings_file.csv
