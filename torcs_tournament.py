@@ -679,9 +679,16 @@ if __name__ == '__main__':
     # Parse command line arguments
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('config_file')
-    parser.add_argument('-l', '--level', default='INFO')
-    parser.add_argument('-s', '--simulate', action="store_true")
+    parser.add_argument('config_file', help="YAML file with configuration")
+    parser.add_argument('-l', '--level', default='INFO',
+                        help="Logging level to use")
+    parser.add_argument(
+        '-s',
+        '--simulate',
+        action="store_true",
+        help="Attempts to mimic a full run without starting child processes."
+        " May fail if no old TORCS output files are present in the expected"
+        " directory.")
     args = parser.parse_args()
 
     # Initialise logging
