@@ -33,23 +33,74 @@ To install a patched version of Torcs, download version 1.3.4 (or 1.3.7?) and [t
 ... (documentation missing)
 
 # Running the system
-**COMMAND**
+To run a race make sure you have a `.yml` configuration file that satisfies your wishes (see Configuration details) and run:
 
-The configuration file contains key/value pairs that are fed to the constructors of the controller (`Controller`) and the players (`Player`).
+```bash
+./torcs_tournament.py path/to/configuration_file.yml
+```
 
-The format of the configuration file is as follows:
+For more advanced command line options run `./torcs_tournament.py --help`.
+
+## Configuration details
+There are two types of configuration files: the `.yml` files are used by the Python application and the `.xml` files are used by TORCS. Only the `.yml` files are documented here.
+
+The `.yml` files contain keyword arguments for the constructors of the `Player`, `Rater`, `Controller` and `FileBasedQueue` classes under the keys `players`, `rater`, `controller` and `queue` keys, respectively. The following example shows the accepted keys and their default values, with `<!this kind of description!>` for values that must be specified by the user and `<this kind of description>` for automatic values. If a value (or key) is not described using `<!this kind of description!>`, it may be left out and the default or automatic value will be used.
 
 ```yaml
 players:
-    some_token:
-        settings_key: value
-        another_key: value2
-    another_token:
-        a_third_key: value
-        settings_key: value4
+    # All occurrences of `{port}` in `start_command` will be replaced by the
+    # correct port before running the command. `start_command` is issued with
+    # `working_dir` as working directory and `process_owner` as user. If
+    # `process_owner` is not specified, `token` will be used.
+    #
+    # The filenames `stdout` and `stderr` are relative to `output_dir`.
+
+    <!team token!>:
+        working_dir: <!path to the team folder!>
+        # Rating of the `Player`, read from ratings file or initialised at
+        # 1200 if not specified in the ratings file. If this key is specified
+        # in the configuration file it will overwrite the rating of the
+        # player at the start of every run.
+        rating: <see comment>
+        start_command: ['./start.sh', '-p', '{port}']
+        output_dir: './output/'
+        stdout: './{timestamp}-stdout.txt'
+        stderr: './{timestamp}-stderr.txt'
+        process_owner: <the team token>
+    <!a second team token!>:
+        ...
+    <!another team token!>:
+        ...
+    ...
+rater:
+    filename: <!path to the ratings file!>
 controller:
-    fookey: foovalue
-    barkey: barvalue
+    torcs_config_file: <!path to TORCS configuration file!>
+    server_stdout: '{timestamp}-server_out.txt'
+    server_stderr: '{timestamp}-server_err.txt'
+    result_path: '~/.torcs/results/'
+    result_filename_format: "{driver} - {base}"
+    timestamp_format: '%Y-%m-%d-%H.%M'
+    # Specifies which TORCS driver names correspond to which ports
+    driver_to_port:
+        scr_server 1: 3001
+        scr_server 2: 3002
+        scr_server 3: 3003
+        scr_server 4: 3004
+        scr_server 5: 3005
+        scr_server 6: 3006
+        scr_server 7: 3007
+        scr_server 8: 3008
+        scr_server 9: 3009
+        scr_server 10: 3010
+    # If specified a backup of the ratings file will be made after the race
+    rater_backup_filename: None
+    # Time to wait before (forcefully) terminating child processes in seconds
+    shutdown_wait: 1
+queue:
+    # Filename used to check the last modified time, relative to
+    # `Player.working_dir`.
+    filename: 'start.sh'
 ```
 
 # Ratings file
