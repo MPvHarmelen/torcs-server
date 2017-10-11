@@ -97,7 +97,7 @@ class Rater(object):
         for player in players:
             self.add_player(player)
         self.filename = filename
-        if self.filename is not None:
+        if self.filename is not None and os.path.exists(self.filename):
             self.read_file()
 
     def add_player(self, player):
@@ -611,7 +611,6 @@ class Controller(object):
             ),
             **config_dic.get('rater', {})
         )
-        rater.read_file()
         return rater
 
     @staticmethod
