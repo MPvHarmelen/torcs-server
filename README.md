@@ -74,6 +74,7 @@ players:
     ...
 rater:
     filename: <!path to the ratings file!>
+    ignore_unknown_ratings: False
 controller:
     torcs_config_file: <!path to TORCS configuration file!>
     server_stdout: '{timestamp}-server_out.txt'
@@ -102,6 +103,27 @@ queue:
     # Filename used to check the last modified time, relative to
     # `Player.working_dir`.
     filename: 'start.sh'
+```
+
+Instead of specifying the players in the main configuration file, the `players` key may also contain a path to a `.yml` file containing the player specification, e.g.:
+
+```yaml
+# Main configuration file
+players: path/to/player_config.yml
+# Other settings
+...
+```
+
+```yaml
+# player_config.yml
+<!team token!>:
+    # Config
+    ...
+<!a second team token!>:
+    ...
+<!another team token!>:
+    ...
+...
 ```
 
 # Ratings file
