@@ -680,13 +680,7 @@ class Controller(object):
     @staticmethod
     def load_rater(config_dic):
         players = Controller.load_players(config_dic)
-        rater = Rater(
-            (
-                Player(token, **player_conf)
-                for token, player_conf in players.items()
-            ),
-            **config_dic.get('rater', {})
-        )
+        rater = Rater(players, **config_dic.get('rater', {}))
         return rater
 
     @staticmethod
@@ -721,7 +715,10 @@ class Controller(object):
                     logger.debug("Closed players config!")
             if not isinstance(players, abc.Mapping):
                 raise the_exception
-        return players
+        return [
+            Player(token, **player_conf)
+            for token, player_conf in players.items()
+        ]
 
     @staticmethod
     def load_fbq(config_dic, players=()):
