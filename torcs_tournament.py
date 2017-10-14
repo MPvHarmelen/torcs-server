@@ -10,7 +10,7 @@ import shutil
 import pathlib
 import datetime
 import subprocess
-from collections import OrderedDict
+from collections import OrderedDict, abc
 
 import elo
 import yaml
@@ -679,14 +679,49 @@ class Controller(object):
 
     @staticmethod
     def load_rater(config_dic):
+        players = Controller.load_players(config_dic)
         rater = Rater(
             (
                 Player(token, **player_conf)
-                for token, player_conf in config_dic['players'].items()
+                for token, player_conf in players.items()
             ),
             **config_dic.get('rater', {})
         )
         return rater
+
+    @staticmethod
+    def load_players(config_dic):
+        key = 'players'
+        if key not in config_dic:
+            raise ValueError(
+                "No players specified! Expected a {!r} key in the"
+                " configuration file.".format(key)
+            )
+        players = config_dic[key]
+        if not isinstance(players, abc.Mapping):
+            # If it's not a mapping, I'm assuming I can open it.
+            the_exception = TypeError(
+                "Expected {key!r} to point to a {{token: config}} mapping or"
+                " a path to a .yml file containing a {{token: config}}"
+                " mapping. Instead I found: {players!r}".format(
+                    key=key,
+                    players=players
+                )
+            )
+            fd = None
+            try:
+                fd = open(players)
+            except Exception as e:
+                raise the_exception from e
+            else:
+                players = yaml.load(fd, OrderedLoader)
+            finally:
+                if fd is not None:
+                    fd.close()
+                    logger.debug("Closed players config!")
+            if not isinstance(players, abc.Mapping):
+                raise the_exception
+        return players
 
     @staticmethod
     def load_fbq(config_dic, players=()):
