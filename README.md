@@ -78,6 +78,7 @@ controller:
     torcs_config_file: <!path to TORCS configuration file!>
     server_stdout: '{timestamp}-server_out.txt'
     server_stderr: '{timestamp}-server_err.txt'
+    separate_player_uid: False
     result_path: '~/.torcs/results/'
     result_filename_format: "{driver} - {base}"
     timestamp_format: '%Y-%m-%d-%H.%M'
