@@ -99,6 +99,7 @@ controller:
     rater_backup_filename: None
     # Time to wait before (forcefully) terminating child processes in seconds
     shutdown_wait: 1
+    crash_check_wait: 0.2
 queue:
     # Filename used to check the last modified time, relative to
     # `Player.working_dir`.

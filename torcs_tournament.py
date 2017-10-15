@@ -245,7 +245,8 @@ class Controller(object):
                     ('scr_server 10', 3010),
                  ]),
                  rater_backup_filename=None,
-                 shutdown_wait=1):
+                 shutdown_wait=1,
+                 crash_check_wait=0.2):
         """
         Orchestrate the races and save the ratings.
 
@@ -268,6 +269,7 @@ class Controller(object):
         self.driver_to_port = driver_to_port
         self.rater_backup_filename = rater_backup_filename
         self.shutdown_wait = shutdown_wait
+        self.crash_check_wait = crash_check_wait
         logger.debug("Result path: {}".format(self.result_path))
 
         # Read drivers from config
@@ -496,6 +498,8 @@ class Controller(object):
                         cwd=player.working_dir,
                     ))
                 logger.debug("Started {}".format(player))
+
+            time.sleep(self.crash_check_wait)
 
             # Check no one crashed in the mean time
             for proc in processes:
