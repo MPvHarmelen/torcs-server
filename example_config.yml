@@ -1,22 +1,4 @@
-players:
-  player0:
-    working_dir: ../client/
-  player1:
-    working_dir: ../client (copy)/
-  player2:
-    working_dir: ../client (another copy)/
-  player3:
-    working_dir: ../client (3rd copy)/
-  player4:
-    working_dir: ../client (4th copy)/
-  player4:
-    working_dir: ../client (4th copy)/
-  player5:
-    working_dir: ../client (5th copy)/
-  player6:
-    working_dir: ../client (6th copy)/
-  player7:
-    working_dir: ../client (7th copy)/
+players: example_players.yml
 controller:
   torcs_config_file: ./example_torcs_config.xml
 rater:
