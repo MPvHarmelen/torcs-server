@@ -98,7 +98,10 @@ controller:
     # If specified a backup of the ratings file will be made after the race
     rater_backup_filename: None
     # Time to wait before (forcefully) terminating child processes in seconds
+    # after a race
     shutdown_wait: 1
+    # Time to wait before checking all player processes are still alive when
+    # starting a race
     crash_check_wait: 0.2
 queue:
     # Filename used to check the last modified time, relative to
