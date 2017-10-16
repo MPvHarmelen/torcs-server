@@ -737,7 +737,7 @@ class FileBasedQueue(object):
 
     def __init__(self, players, filename='start.sh'):
         self.filename = filename
-        self.players = players
+        self.players = list(players)
 
     @staticmethod
     def touch(filename):
