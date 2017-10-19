@@ -716,7 +716,7 @@ class Controller(object):
             finally:
                 if fd is not None:
                     fd.close()
-                    logger.debug("Closed players config!")
+                    # logger.debug("Closed players config!")
             if not isinstance(players, abc.Mapping):
                 raise the_exception
         return [
