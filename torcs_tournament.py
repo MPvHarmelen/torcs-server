@@ -808,12 +808,20 @@ class FileBasedQueue(object):
             self.touch(self.get_filename(player))
 
 
+def log_level_type(string):
+    try:
+        value = int(string)
+    except:
+        value = string
+    return value
+
+
 if __name__ == '__main__':
     # Parse command line arguments
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument('config_file', help="YAML file with configuration")
-    parser.add_argument('-l', '--level', default='INFO',
+    parser.add_argument('-l', '--level', default='INFO', type=log_level_type,
                         help="Logging level to use")
     parser.add_argument(
         '-s',
