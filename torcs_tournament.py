@@ -229,9 +229,11 @@ class Controller(object):
                  server_stdout='{timestamp}-server_out.txt',
                  server_stderr='{timestamp}-server_err.txt',
                  separate_player_uid=False,
-                 result_path='~/.torcs/results/',
+                 rater_backup_filename=None,
                  result_filename_format="{driver} - {base}",
                  timestamp_format='%Y-%m-%d-%H.%M',
+                 result_path='~/.torcs/results/',
+                 torcs_command=['torcs', '-r', '{config_file}'],
                  driver_to_port=OrderedDict([
                     ('scr_server 1', 3001),
                     ('scr_server 2', 3002),
@@ -244,7 +246,6 @@ class Controller(object):
                     ('scr_server 9', 3009),
                     ('scr_server 10', 3010),
                  ]),
-                 rater_backup_filename=None,
                  shutdown_wait=1,
                  crash_check_wait=0.2):
         """
@@ -263,11 +264,12 @@ class Controller(object):
         self.server_stdout = server_stdout
         self.server_stderr = server_stderr
         self.separate_player_uid = separate_player_uid
-        self.result_path = os.path.expanduser(result_path)
+        self.rater_backup_filename = rater_backup_filename
         self.result_filename_format = result_filename_format
         self.timestamp_format = timestamp_format
+        self.result_path = os.path.expanduser(result_path)
+        self.torcs_command = torcs_command
         self.driver_to_port = driver_to_port
-        self.rater_backup_filename = rater_backup_filename
         self.shutdown_wait = shutdown_wait
         self.crash_check_wait = crash_check_wait
         logger.debug("Result path: {}".format(self.result_path))
@@ -440,8 +442,14 @@ class Controller(object):
                     "This is a simulation! No child processes are started."
                 )
             else:
+                config_file = os.path.abspath(self.torcs_config_file)
                 server_process = subprocess.Popen(
-                    ['torcs', '-r', os.path.abspath(self.torcs_config_file)],
+                    map(
+                        lambda s: s.format(
+                            config_file=config_file
+                        ),
+                        self.torcs_command
+                    ),
                     stdout=server_stdout,
                     stderr=server_stderr,
                 )

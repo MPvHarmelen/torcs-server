@@ -80,9 +80,12 @@ controller:
     server_stdout: '{timestamp}-server_out.txt'
     server_stderr: '{timestamp}-server_err.txt'
     separate_player_uid: False
-    result_path: '~/.torcs/results/'
+    # If specified a backup of the ratings file will be made after the race
+    rater_backup_filename: None
     result_filename_format: "{driver} - {base}"
     timestamp_format: '%Y-%m-%d-%H.%M'
+    result_path: '~/.torcs/results/'
+    torcs_command: ['torcs', '-r', '{config_file}']
     # Specifies which TORCS driver names correspond to which ports
     driver_to_port:
         scr_server 1: 3001
@@ -95,14 +98,14 @@ controller:
         scr_server 8: 3008
         scr_server 9: 3009
         scr_server 10: 3010
-    # If specified a backup of the ratings file will be made after the race
-    rater_backup_filename: None
     # Time to wait before (forcefully) terminating child processes in seconds
     # after a race
     shutdown_wait: 1
     # Time to wait before checking all player processes are still alive when
     # starting a race
     crash_check_wait: 0.2
+    dropbox_start_command: ['dropbox', 'start']
+    dropbox_stop_command: ['dropbox', 'stop']
 queue:
     # Filename used to check the last modified time, relative to
     # `Player.working_dir`.
