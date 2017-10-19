@@ -656,17 +656,17 @@ class Controller(object):
 
         return env
 
-    @staticmethod
-    def load_config(config_file):
+    @classmethod
+    def load_config(cls, config_file):
         error_regex = re.compile(
             r"__init__\(\) got an unexpected keyword argument '(\w+)'"
         )
         with open(config_file) as fd:
             config = yaml.load(fd, OrderedLoader)
         try:
-            rater = Controller.load_rater(config)
-            fbq = Controller.load_fbq(config, rater.player_map.values())
-            controller = Controller(rater, fbq, **config.get('controller', {}))
+            rater = cls.load_rater(config)
+            fbq = cls.load_fbq(config, rater.player_map.values())
+            controller = cls(rater, fbq, **config.get('controller', {}))
         except TypeError as e:
             match = error_regex.fullmatch(e.args[0])
             if match is not None:
@@ -681,9 +681,9 @@ class Controller(object):
                 raise
         return controller
 
-    @staticmethod
-    def load_rater(config_dic):
-        players = Controller.load_players(config_dic)
+    @classmethod
+    def load_rater(cls, config_dic):
+        players = cls.load_players(config_dic)
         rater = Rater(players, **config_dic.get('rater', {}))
         return rater
 
@@ -727,6 +727,28 @@ class Controller(object):
     @staticmethod
     def load_fbq(config_dic, players=()):
         return FileBasedQueue(players, **config_dic.get('queue', {}))
+
+
+class DropboxDisablingController(Controller):
+    def __init__(self, *args, dropbox_start_command=['dropbox', 'start'],
+                 dropbox_stop_command=['dropbox', 'stop'], **kwargs):
+        self.dropbox_start_command = dropbox_start_command
+        self.dropbox_stop_command = dropbox_stop_command
+        super(DropboxDisablingController, self).__init__(*args, **kwargs)
+
+    def race_once(self, *args, **kwargs):
+        # Try to disable Dropbox
+        # The catch is that the return status of the Dropbox control script
+        # is always 0, even if something went wrong...
+        logger.debug("Stopping Dropbox...")
+        subprocess.run(self.dropbox_stop_command)
+
+        # Race
+        super(DropboxDisablingController, self).race_once(*args, **kwargs)
+
+        # Enable Dropbox
+        logger.debug("Starting Dropbox...")
+        subprocess.run(self.dropbox_start_command)
 
 
 class FileBasedQueue(object):
@@ -806,6 +828,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=args.level)
 
     # Race
-    controller = Controller.load_config(args.config_file)
+    # controller = Controller.load_config(args.config_file)
+    controller = DropboxDisablingController.load_config(args.config_file)
     controller.race_and_save(simulate=args.simulate)
     logger.info("Done!")
