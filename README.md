@@ -99,6 +99,10 @@ controller:
         scr_server 8: 3008
         scr_server 9: 3009
         scr_server 10: 3010
+    # Whether to raise an exception if TORCS completed to quickly
+    raise_on_too_fast_completion: True
+    # If TORCS completed faster than this, a warning is issued
+    torcs_min_time: 1
     # Time to wait after starting TORCS to ask for its child processes
     torcs_child_wait: 0.5
     # Time to wait before terminating child processes in seconds

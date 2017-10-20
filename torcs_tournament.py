@@ -250,6 +250,8 @@ class Controller(object):
                     ('scr_server 9', 3009),
                     ('scr_server 10', 3010),
                  ]),
+                 raise_on_too_fast_completion=True,
+                 torcs_min_time=1,
                  torcs_child_wait=0.5,
                  shutdown_wait=1,
                  crash_check_wait=0.2):
@@ -276,6 +278,8 @@ class Controller(object):
         self.result_path = os.path.expanduser(result_path)
         self.torcs_command = torcs_command
         self.driver_to_port = driver_to_port
+        self.raise_on_too_fast_completion = raise_on_too_fast_completion
+        self.torcs_min_time = torcs_min_time
         self.torcs_child_wait = torcs_child_wait
         self.shutdown_wait = shutdown_wait
         self.crash_check_wait = crash_check_wait
@@ -538,13 +542,38 @@ class Controller(object):
 
             # Wait for server
             logger.info("Waiting for TORCS to finish...")
+            start_time = time.time()
             if not simulate:
                 server_process.wait()
+            end_time = time.time()
+            # Time TORCS ran in seconds
+            diff_time = end_time - start_time
+            if not simulate and diff_time < self.torcs_min_time:
+                logger.warning(
+                    "TORCS only ran for {:.2f} seconds".format(diff_time)
+                )
+                if self.raise_on_too_fast_completion:
+                    raise subprocess.SubprocessError(
+                        "TORCS only took {:.2f} seconds to complete".format(
+                            diff_time
+                        )
+                    )
+            logger.debug("Finished!")
 
             # Check exit status of TORCS
-
-            # Clean up `torcs-bin`?
-            # https://stackoverflow.com/questions/550653/cross-platform-way-to-get-pids-by-process-name-in-python#2241047
+            # However, even if something goes wrong, the exit status is 0,
+            # so I can't know if something went wrong.
+            # logger.debug("server_process.is_running(): {}".format(
+            #     server_process.is_running()
+            # ))
+            # logger.debug("server_process.returncode: {}".format(
+            #     server_process.returncode
+            # ))
+            # if server_process.returncode:
+            #     raise subprocess.CalledProcessError(
+            #         proc.returncode,
+            #         proc.args
+            #     )
 
         except:
             logger.error("An error occurred, trying to stop gracefully...")
