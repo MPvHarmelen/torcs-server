@@ -479,22 +479,6 @@ class Controller(object):
                 )
                 open_files.append(stderr)
 
-                # Set the ownership of the files
-                pw_record = pwd.getpwnam(player.process_owner)
-                if self.set_file_ownership:
-                    logger.debug(
-                        "Changing file ownership for {}".format(player.token)
-                    )
-                    for dirpath, _, filenames in os.walk(player.working_dir):
-                        # Change directory ownership
-                        os.chown(dirpath, pw_record.pw_uid, pw_record.pw_gid)
-                        # Change file ownership
-                        for filename in filenames:
-                            os.chown(
-                                os.path.join(dirpath, filename),
-                                pw_record.pw_uid,
-                                pw_record.pw_gid
-                            )
                 if simulate:
                     # Always simulate these functions, just to be sure they
                     # work
@@ -527,6 +511,10 @@ class Controller(object):
                         cwd=player.working_dir,
                     ))
                 logger.debug("Started {}".format(player))
+
+                # Set the ownership of the files
+                if self.set_file_ownership:
+                    self.change_owner(player)
 
             time.sleep(self.crash_check_wait)
 
@@ -648,6 +636,26 @@ class Controller(object):
             self.rater.save_ratings(
                 backup_filename
             )
+
+    def change_owner(self, player):
+        """
+        Make `player.process_owner` the owner of all files in
+        `player.working_dir`
+        """
+        pw_record = pwd.getpwnam(player.process_owner)
+        logger.debug(
+            "Changing file ownership for {}".format(player.token)
+        )
+        for dirpath, _, filenames in os.walk(player.working_dir):
+            # Change directory ownership
+            os.chown(dirpath, pw_record.pw_uid, pw_record.pw_gid)
+            # Change file ownership
+            for filename in filenames:
+                os.chown(
+                    os.path.join(dirpath, filename),
+                    pw_record.pw_uid,
+                    pw_record.pw_gid
+                )
 
     @staticmethod
     def get_change_user_fn(player):
