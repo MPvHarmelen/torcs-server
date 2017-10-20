@@ -99,8 +99,10 @@ controller:
         scr_server 8: 3008
         scr_server 9: 3009
         scr_server 10: 3010
-    # Time to wait before (forcefully) terminating child processes in seconds
-    # after a race
+    # Time to wait after starting TORCS to ask for its child processes
+    torcs_child_wait: 0.5
+    # Time to wait before terminating child processes in seconds
+    # after a race and forcefully killing them after terminating them
     shutdown_wait: 1
     # Time to wait before checking all player processes are still alive when
     # starting a race

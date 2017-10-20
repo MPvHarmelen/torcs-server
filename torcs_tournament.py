@@ -7,6 +7,7 @@ import pwd
 import csv
 import time
 import shutil
+import psutil
 import pathlib
 import datetime
 import subprocess
@@ -249,6 +250,7 @@ class Controller(object):
                     ('scr_server 9', 3009),
                     ('scr_server 10', 3010),
                  ]),
+                 torcs_child_wait=0.5,
                  shutdown_wait=1,
                  crash_check_wait=0.2):
         """
@@ -274,6 +276,7 @@ class Controller(object):
         self.result_path = os.path.expanduser(result_path)
         self.torcs_command = torcs_command
         self.driver_to_port = driver_to_port
+        self.torcs_child_wait = torcs_child_wait
         self.shutdown_wait = shutdown_wait
         self.crash_check_wait = crash_check_wait
         logger.debug("Result path: {}".format(self.result_path))
@@ -447,7 +450,7 @@ class Controller(object):
                 )
             else:
                 config_file = os.path.abspath(self.torcs_config_file)
-                server_process = subprocess.Popen(
+                server_process = psutil.Popen(
                     map(
                         lambda s: s.format(
                             config_file=config_file
@@ -458,6 +461,13 @@ class Controller(object):
                     stderr=server_stderr,
                 )
                 processes.append(server_process)
+
+                # TORCS starts a child process, which doesn't terminate
+                # automatically if `server_process` is terminated or crashes.
+                time.sleep(self.torcs_child_wait)
+                children = server_process.children()
+                logger.debug("TORCS server children: {}".format(children))
+                processes.extend(children)
 
             # Start players
             logger.info("Starting players...")
@@ -485,7 +495,7 @@ class Controller(object):
                     self.get_change_user_fn(player)
                     self.get_player_env(player)
                 elif self.separate_player_uid:
-                    processes.append(subprocess.Popen(
+                    processes.append(psutil.Popen(
                         map(
                             lambda s: s.format(
                                 port=self.driver_to_port[driver]
@@ -499,7 +509,7 @@ class Controller(object):
                         env=self.get_player_env(player)
                     ))
                 else:
-                    processes.append(subprocess.Popen(
+                    processes.append(psutil.Popen(
                         map(
                             lambda s: s.format(
                                 port=self.driver_to_port[driver]
@@ -520,7 +530,7 @@ class Controller(object):
 
             # Check no one crashed in the mean time
             for proc in processes:
-                if proc.poll() is not None:
+                if not proc.is_running():
                     raise subprocess.CalledProcessError(
                         proc.returncode,
                         proc.args
@@ -549,7 +559,7 @@ class Controller(object):
 
                 # First be nice
                 for proc in processes:
-                    if proc.poll() is None:
+                    if proc.is_running():
                         logger.info("Terminating {}".format(proc))
                         proc.terminate()
 
@@ -558,16 +568,19 @@ class Controller(object):
 
                 # Time's up
                 for proc in processes:
-                    if proc.poll() is None:
+                    if proc.is_running():
                         logger.warning("Killing {}".format(proc))
                         proc.kill()
 
+                # Wait a second to give the processes some time
+                time.sleep(self.shutdown_wait)
+
                 # Double check
                 for proc in processes:
-                    if proc.poll() is None:
+                    if proc.is_running():
                         logger.error(
                             "The following process could not be killed: {}"
-                            .format(proc.args)
+                            .format(proc.name())
                         )
 
             # Close all open files
