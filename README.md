@@ -80,6 +80,7 @@ controller:
     server_stdout: '{timestamp}-server_out.txt'
     server_stderr: '{timestamp}-server_err.txt'
     separate_player_uid: False
+    set_file_ownership: False
     # If specified a backup of the ratings file will be made after the race
     rater_backup_filename: None
     result_filename_format: "{driver} - {base}"

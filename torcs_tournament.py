@@ -231,6 +231,7 @@ class Controller(object):
                  server_stdout='{timestamp}-server_out.txt',
                  server_stderr='{timestamp}-server_err.txt',
                  separate_player_uid=False,
+                 set_file_ownership=False,
                  rater_backup_filename=None,
                  result_filename_format="{driver} - {base}",
                  timestamp_format='%Y-%m-%d-%H.%M',
@@ -266,6 +267,7 @@ class Controller(object):
         self.server_stdout = server_stdout
         self.server_stderr = server_stderr
         self.separate_player_uid = separate_player_uid
+        self.set_file_ownership = set_file_ownership
         self.rater_backup_filename = rater_backup_filename
         self.result_filename_format = result_filename_format
         self.timestamp_format = timestamp_format
@@ -476,6 +478,23 @@ class Controller(object):
                     'w'
                 )
                 open_files.append(stderr)
+
+                # Set the ownership of the files
+                pw_record = pwd.getpwnam(player.process_owner)
+                if self.set_file_ownership:
+                    logger.debug(
+                        "Changing file ownership for {}".format(player.token)
+                    )
+                    for dirpath, _, filenames in os.walk(player.working_dir):
+                        # Change directory ownership
+                        os.chown(dirpath, pw_record.pw_uid, pw_record.pw_gid)
+                        # Change file ownership
+                        for filename in filenames:
+                            os.chown(
+                                os.path.join(dirpath, filename),
+                                pw_record.pw_uid,
+                                pw_record.pw_gid
+                            )
                 if simulate:
                     # Always simulate these functions, just to be sure they
                     # work
@@ -523,6 +542,11 @@ class Controller(object):
             logger.info("Waiting for TORCS to finish...")
             if not simulate:
                 server_process.wait()
+
+            # Check exit status of TORCS
+
+            # Clean up `torcs-bin`?
+            # https://stackoverflow.com/questions/550653/cross-platform-way-to-get-pids-by-process-name-in-python#2241047
 
         except:
             logger.error("An error occurred, trying to stop gracefully...")
