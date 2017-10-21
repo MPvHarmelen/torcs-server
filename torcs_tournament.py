@@ -97,7 +97,7 @@ class Player(object):
             ")".format(self=self)
 
     def init_rating(self):
-        self.rating = elo.INITIAL
+        self.rating = elo.RATING_CLASS(elo.INITIAL)
 
 
 class Rater(object):
