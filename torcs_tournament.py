@@ -87,13 +87,15 @@ class Player(object):
             ")".format(self=self)
 
     def __repr__(self):
-        return self.__class__.__name__ + "({self.token!r}, " \
+        return self.__class__.__name__ + "(" \
+            "{self.token!r}, " \
+            "{self.working_dir!r}, " \
             "{self.rating!r}, " \
             "{self.start_command!r}, " \
-            "{self.working_dir!r}, " \
             "{self.output_dir!r}, " \
             "{self.stdout!r}, " \
             "{self.stderr!r}, " \
+            "{self.process_owner!r}" \
             ")".format(self=self)
 
     def init_rating(self):
