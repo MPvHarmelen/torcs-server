@@ -821,37 +821,42 @@ class DropboxDisablingController(Controller):
         super(DropboxDisablingController, self).__init__(*args, **kwargs)
 
     def race_once(self, *args, **kwargs):
-        # Try to disable Dropbox
-        # The catch is that the return status of the Dropbox control script
-        # is always 0, even if something went wrong...
-        logger.info("Stopping Dropbox...")
-        completed = subprocess.run(
-            self.dropbox_stop_command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        logger.info("Dropbox says:\n{}".format(completed.stdout.decode()))
-        del completed
+        """Disable Dropbox before racing and start it again afterwards."""
+        try:
+            # Try to disable Dropbox
+            # The catch is that the return status of the Dropbox control script
+            # is always 0, even if something went wrong...
+            logger.info("Stopping Dropbox...")
+            completed = subprocess.run(
+                self.dropbox_stop_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            logger.info("Dropbox says:\n{}".format(completed.stdout.decode()))
+            del completed
 
-        # Race
-        super(DropboxDisablingController, self).race_once(*args, **kwargs)
-
-        # Enable Dropbox
-        logger.info("Starting Dropbox...")
-        # Somehow stderr captures the output of the started Dropbox daemon.
-        # However, capturing it isn't an option because the daemon doesn't
-        # stop, which means the stream will hang. Thus if you want to see the
-        # output, we'll just leave it as is. Otherwise we'll squelch the
-        # daemon's output.
-        stderr = None if logger.getEffectiveLevel() <= DROPBOX_DEBUG \
-            else subprocess.DEVNULL
-        completed = subprocess.run(
-            self.dropbox_start_command,
-            stdout=subprocess.PIPE,
-            stderr=stderr
-        )
-        logger.info("Dropbox says:\n{}".format(completed.stdout.decode()))
-        del completed
+            # Race
+            return super(DropboxDisablingController, self).race_once(
+                *args,
+                **kwargs
+            )
+        finally:
+            # Enable Dropbox
+            logger.info("Starting Dropbox...")
+            # Somehow stderr captures the output of the started Dropbox daemon.
+            # However, capturing it isn't an option because the daemon doesn't
+            # stop, which means the stream will hang. Thus if you want to see
+            # its output, we'll just leave it as is, otherwise we'll squelch
+            # the daemon's output.
+            stderr = None if logger.getEffectiveLevel() <= DROPBOX_DEBUG \
+                else subprocess.DEVNULL
+            completed = subprocess.run(
+                self.dropbox_start_command,
+                stdout=subprocess.PIPE,
+                stderr=stderr
+            )
+            logger.info("Dropbox says:\n{}".format(completed.stdout.decode()))
+            del completed
 
 
 class FileBasedQueue(object):
