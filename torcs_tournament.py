@@ -737,7 +737,7 @@ class Controller(object):
         logger.debug("ENV PWD: {}".format(env.get('PWD', None)))
         env['PWD'] = player.working_dir
         logger.debug("Set PWD to: {!r}".format(env['PWD']))
-
+        logger.debug("PATH: {}".format(env['PATH']))
         return env
 
     @classmethod
