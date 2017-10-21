@@ -113,6 +113,8 @@ controller:
     crash_check_wait: 0.2
     dropbox_start_command: ['dropbox', 'start']
     dropbox_stop_command: ['dropbox', 'stop']
+    # Whether to start Dropbox again after a race
+    start_dropbox: True
 queue:
     # Filename used to check the last modified time, relative to
     # `Player.working_dir`.

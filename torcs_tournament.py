@@ -741,12 +741,52 @@ class Controller(object):
         return env
 
     @classmethod
-    def load_config(cls, config_file):
+    def load_config(cls, config_file, extra_config={}):
+        """
+        Load a controller from the given config file.
+
+        NB. Only the first layer of `extra_config` is merged, everything else
+            is overwritten, e.g.:
+            original_config = {
+                'test': {
+                    'test-one': 'hello'
+                    'test-two': {
+                        'test-two-one': 'bye'
+                    }
+                }
+            }
+            extra_config = {
+                'test': {
+                    'test-two': {
+                        'test-two-two': 'override'
+                    }
+                    'test-three': 'added'
+                }
+            }
+
+            results in:
+            config = {
+                'test': {
+                    'test-one': 'hello'
+                    'test-two': {
+                        'test-two-two': 'override'
+                    }
+                    'test-three': 'added'
+                }
+            }
+        """
         error_regex = re.compile(
             r"__init__\(\) got an unexpected keyword argument '(\w+)'"
         )
         with open(config_file) as fd:
             config = yaml.load(fd, OrderedLoader)
+        for key, value in extra_config.items():
+            if isinstance(value, abc.Mapping):
+                cur_conf = config.setdefault(key, {})
+                cur_conf.update(value)
+            else:
+                config[key] = value
+        logger.debug("Config: {}".format(config))
         try:
             rater = cls.load_rater(config)
             fbq = cls.load_fbq(config, rater.player_map.values())
@@ -815,9 +855,11 @@ class Controller(object):
 
 class DropboxDisablingController(Controller):
     def __init__(self, *args, dropbox_start_command=['dropbox', 'start'],
-                 dropbox_stop_command=['dropbox', 'stop'], **kwargs):
+                 dropbox_stop_command=['dropbox', 'stop'], start_dropbox=True,
+                 **kwargs):
         self.dropbox_start_command = dropbox_start_command
         self.dropbox_stop_command = dropbox_stop_command
+        self.start_dropbox = start_dropbox
         super(DropboxDisablingController, self).__init__(*args, **kwargs)
 
     def race_once(self, *args, **kwargs):
@@ -841,22 +883,25 @@ class DropboxDisablingController(Controller):
                 **kwargs
             )
         finally:
-            # Enable Dropbox
-            logger.info("Starting Dropbox...")
-            # Somehow stderr captures the output of the started Dropbox daemon.
-            # However, capturing it isn't an option because the daemon doesn't
-            # stop, which means the stream will hang. Thus if you want to see
-            # its output, we'll just leave it as is, otherwise we'll squelch
-            # the daemon's output.
-            stderr = None if logger.getEffectiveLevel() <= DROPBOX_DEBUG \
-                else subprocess.DEVNULL
-            completed = subprocess.run(
-                self.dropbox_start_command,
-                stdout=subprocess.PIPE,
-                stderr=stderr
-            )
-            logger.info("Dropbox says:\n{}".format(completed.stdout.decode()))
-            del completed
+            if self.start_dropbox:
+                # Enable Dropbox
+                logger.info("Starting Dropbox...")
+
+                # Somehow stderr captures the output of the started Dropbox
+                # daemon. However, capturing it isn't an option because the
+                # daemon doesn't stop, which means the stream will hang. Thus
+                # if you want to see its output, we'll just leave it as is,
+                # otherwise we'll squelch the daemon's output.
+
+                stderr = None if logger.getEffectiveLevel() <= DROPBOX_DEBUG \
+                    else subprocess.DEVNULL
+                completed = subprocess.run(
+                    self.dropbox_start_command,
+                    stdout=subprocess.PIPE,
+                    stderr=stderr
+                )
+                logger.info("Dropbox says:\n{}".format(completed.stdout.decode()))
+                del completed
 
 
 class FileBasedQueue(object):
@@ -934,17 +979,30 @@ if __name__ == '__main__':
     parser.add_argument(
         '-s',
         '--simulate',
-        action="store_true",
+        action='store_true',
         help="Attempts to mimic a full run without starting child processes."
         " May fail if no old TORCS output files are present in the expected"
         " directory.")
+    parser.add_argument(
+        '--no-start-dropbox',
+        action='store_true',
+        help="If given Dropbox will not be started again."
+    )
     args = parser.parse_args()
 
     # Initialise logging
     logging.basicConfig(level=args.level)
 
+    extra_config = {}
+    if args.no_start_dropbox:
+        control_config = extra_config.setdefault('controller', {})
+        control_config['start_dropbox'] = False
+
     # Race
     # controller = Controller.load_config(args.config_file)
-    controller = DropboxDisablingController.load_config(args.config_file)
+    controller = DropboxDisablingController.load_config(
+        args.config_file,
+        extra_config
+    )
     controller.race_and_save(simulate=args.simulate)
     logger.info("Done!")
