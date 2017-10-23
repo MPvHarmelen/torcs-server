@@ -28,6 +28,11 @@ def path_rel_to_dir(path, direcotry):
     return path
 
 
+def really_running(proc):
+    """Check whether a process is running _and_ isn't a zombie"""
+    return proc.is_running() and proc.status() != psutil.STATUS_ZOMBIE
+
+
 class OrderedLoader(yaml.Loader):
     def construct_mapping(self, node, deep=False):
         # self.flatten_mapping(node)
@@ -536,7 +541,7 @@ class Controller(object):
 
             # Check no one crashed in the mean time
             for proc in processes:
-                if not proc.is_running():
+                if not really_running(proc):
                     raise subprocess.CalledProcessError(
                         proc.returncode,
                         proc.args
@@ -565,8 +570,8 @@ class Controller(object):
             # Check exit status of TORCS
             # However, even if something goes wrong, the exit status is 0,
             # so I can't know if something went wrong.
-            # logger.debug("server_process.is_running(): {}".format(
-            #     server_process.is_running()
+            # logger.debug("really_running(server_process): {}".format(
+            #     really_running(server_process)
             # ))
             # logger.debug("server_process.returncode: {}".format(
             #     server_process.returncode
@@ -590,7 +595,7 @@ class Controller(object):
 
                 # First be nice
                 for proc in processes:
-                    if proc.is_running():
+                    if really_running(proc):
                         logger.info("Terminating {}".format(proc))
                         proc.terminate()
 
@@ -599,7 +604,7 @@ class Controller(object):
 
                 # Time's up
                 for proc in processes:
-                    if proc.is_running():
+                    if really_running(proc):
                         logger.warning("Killing {}".format(proc))
                         proc.kill()
 
@@ -608,10 +613,10 @@ class Controller(object):
 
                 # Double check
                 for proc in processes:
-                    if proc.is_running():
+                    if really_running(proc):
                         logger.error(
                             "The following process could not be killed: {}"
-                            .format(proc.name())
+                            .format(proc.cmdline())
                         )
 
             # Close all open files
@@ -621,7 +626,7 @@ class Controller(object):
                     fd.close()
                 except Exception as e:
                     logger.error(e)
-            logger.info("Success!")
+            logger.info("Closed all files and processes!")
 
         # Give the players the server output
         for player in players:
