@@ -4,36 +4,11 @@ Install torcs and run tournaments using ELO rankings.
 Useful information can be found on [this blog](http://www.xed.ch/help/torcs.html).
 
 # Installation
-First create a patched version of Torcs, by either finding readily patched source code or patching it yourself (see [Patching](#patching).
+If you have installed a patched version of TORCS (which can be found on your path), set up a tournament by installing
 
-## Easy
-Make sure you're using a patched version of TORCS 1.3.7 and place the zip (`torcs-1.3.7-patched.zip`) in the root of this repository. Now run `./easy-install.sh`. Done!
-
-## Manual
-Place the patched source code anywhere (just remember where) and run the following command to install the necessary requirements (taken from [this pdf](https://arxiv.org/pdf/1304.1672.pdf) and experience).
-
-```bash
-xargs sudo apt-get install < system_requirements.txt
-```
-
-Now `cd` into your version of the patched Torcs source code and run:
-
-```bash
-
-./configure
-make
-sudo make install
-make datainstall
-```
-
-# Patching
-To install a patched version of Torcs, download version 1.3.4 (or 1.3.7?) and [this patch](https://sourceforge.net/projects/cig/files/SCR%20Championship/Server%20Linux/2.1/) (linked from [here](http://cs.adelaide.edu.au/~optlog/SCR2015/software.html)) and put them in the root of this repository.
-
-
-... (documentation missing)
 
 # Running the system
-To run a race make sure you have a `.yml` configuration file that satisfies your wishes (see Configuration details) and run:
+To run a race make sure you have a `.yml` configuration file that satisfies your wishes (see [Configuration details](#configuration-details)) and run:
 
 ```bash
 ./torcs_tournament.py path/to/configuration_file.yml
@@ -41,7 +16,41 @@ To run a race make sure you have a `.yml` configuration file that satisfies your
 
 For more advanced command line options run `./torcs_tournament.py --help`.
 
-## Configuration details
+# TORCS Installation
+First create a patched version of Torcs, by either finding readily patched source code or patching it yourself (see [Patching](#patching)).
+
+## Easy
+Make sure you're using a patched version of TORCS 1.3.7 and place the zip (`torcs-1.3.7-patched.zip`) in the root of this repository. Now run `./easy-install.sh`. Done!
+
+## Manual
+Place the patched source code anywhere (just remember where) and `cd` into it.
+Run the following command to install the necessary requirements (taken from [this pdf](https://arxiv.org/pdf/1304.1672.pdf) and experience).
+
+```bash
+xargs sudo apt-get install < system_requirements.txt
+```
+
+Now run the following commands to install TORCS. (Don't be afraid of the warnings.)
+
+```bash
+./configure
+make
+sudo make install
+make datainstall
+```
+
+## Patching
+The course uses version 1.3.7. Patching this version, however, isn't tested. If you really want to patch your own TORCS installation instead of using the provided patched source for version 1.3.7, follow these instructions. These instructions are to patch the source of TORCS version 1.3.**4**. Try patching version 1.3.7 at your own risk 😊
+
+To create your own patched version of Torcs, download version 1.3.4 (or 1.3.7 at your own risk) and [this patch](https://sourceforge.net/projects/cig/files/SCR%20Championship/Server%20Linux/2.1/) (linked from the [SCRC 2015 software page](http://cs.adelaide.edu.au/~optlog/SCR2015/software.html)).
+
+Unpack the TORCS source and the unpack the patch *inside* the source directory. `cd` to the patch directory (e.g. `cd torcs-1.3.4/scr-patch`) and run `sh ./do_patch.sh`.
+
+In the TORCS source, on line `373` of `torcs-1.3.4/src/drivers/olethros/geometry.cpp` add `std::` just before `isnan` (which is at position `17`). In programmer jargon: insert `std::` at `torcs-1.3.4/src/drivers/olethros/geometry.cpp:373:17`.
+
+That was it! Now follow the [manual installation instructions](#manual).
+
+# Configuration details
 There are two types of configuration files: the `.yml` files are used by the Python application and the `.xml` files are used by TORCS. Only the `.yml` files are documented here.
 
 The `.yml` files contain keyword arguments for the constructors of the `Player`, `Rater`, `Controller` and `FileBasedQueue` classes under the keys `players`, `rater`, `controller` and `queue` keys, respectively. The following example shows the accepted keys and their default values, with `<!this kind of description!>` for values that must be specified by the user and `<this kind of description>` for automatic values. If a value (or key) is not described using `<!this kind of description!>`, it may be left out and the default or automatic value will be used.
@@ -76,6 +85,8 @@ rater:
     filename: <!path to the ratings file!>
     ignore_unknown_ratings: False
 controller:
+    # NB. The path full path to the TORCS config file may not contain spaces,
+    #     even if you only specify a relative path.
     torcs_config_file: <!path to TORCS configuration file!>
     server_stdout: '{timestamp}-server_out.txt'
     server_stderr: '{timestamp}-server_err.txt'
@@ -160,10 +171,3 @@ random_token6,400
 The easiest way to create a TORCS configuration file is to start TORCS (run `torcs`) and configure a race using the UI. The configuration file can now be found under `~/.torcs/config/raceman/<name-of-race-type>.xml`.
 
 For the section `Drivers` the section numbering determines the racing order, while the `idx` attribute determines "which" SCR server is used, thus which port number is used. The SCR server uses port `300{idx}`, where `idx` ranges from 0 to 9.
-
-# Results
-The results are saved to a file in each players working directory
-
-# To Do
- - [X] Read player names from torcs config file and choose ports accordingly in `Controller.race_once`
- - [ ] Feed player configuration to the constructor instead of just setting them as attributes
