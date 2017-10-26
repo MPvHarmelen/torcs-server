@@ -86,7 +86,7 @@ players:
     ...
 rater:
     filename: <!path to the ratings file!>
-    ignore_unknown_ratings: False
+    ignore_unknown_players: False
 controller:
     # NB. The path full path to the TORCS config file may not contain spaces,
     #     even if you only specify a relative path.

@@ -109,12 +109,12 @@ class Player(object):
 
 class Rater(object):
     def __init__(self, players=(), filename=None,
-                 ignore_unknown_ratings=False):
+                 ignore_unknown_players=False):
         self.player_map = {}
         for player in players:
             self.add_player(player)
         self.filename = filename
-        self.ignore_unknown_ratings = ignore_unknown_ratings
+        self.ignore_unknown_players = ignore_unknown_players
         if self.filename is not None and os.path.exists(self.filename):
             self.read_file()
 
@@ -163,7 +163,7 @@ class Rater(object):
             if len(line) == 2:
                 if token in self.player_map:
                     self.player_map[token].rating = elo.RATING_CLASS(line[1])
-                elif not self.ignore_unknown_ratings:
+                elif not self.ignore_unknown_players:
                     raise ValueError(
                         "Rating specified for unknown player: {}".format(token)
                     )
