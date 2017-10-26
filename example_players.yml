@@ -1,18 +1,2 @@
-player0:
-  working_dir: /home/disc_space/teams/client/
-player1:
-  working_dir: /home/disc_space/teams/client (copy)/
-player2:
-  working_dir: /home/disc_space/teams/client (another copy)/
-player3:
-  working_dir: /home/disc_space/teams/client (3rd copy)/
-player4:
-  working_dir: /home/disc_space/teams/client (4th copy)/
-player4:
-  working_dir: /home/disc_space/teams/client (4th copy)/
-player5:
-  working_dir: /home/disc_space/teams/client (5th copy)/
-player6:
-  working_dir: /home/disc_space/teams/client (6th copy)/
-player7:
-  working_dir: /home/disc_space/teams/client (7th copy)/
+player:
+  working_dir: ../torcs-client/
