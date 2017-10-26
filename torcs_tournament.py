@@ -633,22 +633,24 @@ class Controller(object):
                     logger.error(e)
             logger.info("Closed all files and processes!")
 
-        # Give the players the server output
-        for player in players:
-            shutil.copyfile(
-                server_stdout.name,
-                os.path.join(
-                    player.output_dir,
-                    os.path.basename(server_stdout.name)
+            # Give the players the server output
+            for player in players:
+                shutil.copyfile(
+                    server_stdout.name,
+                    os.path.join(
+                        player.output_dir,
+                        os.path.basename(server_stdout.name)
+                    )
                 )
-            )
-            shutil.copyfile(
-                server_stderr.name,
-                os.path.join(
-                    player.output_dir,
-                    os.path.basename(server_stderr.name)
+                shutil.copyfile(
+                    server_stderr.name,
+                    os.path.join(
+                        player.output_dir,
+                        os.path.basename(server_stderr.name)
+                    )
                 )
-            )
+
+                # End of `finally` clause
 
         # Find the correct results file
         logger.debug("Result path: {}".format(self.result_path))
