@@ -4,8 +4,11 @@ Install torcs and run tournaments using ELO rankings.
 Useful information can be found on [this blog](http://www.xed.ch/help/torcs.html).
 
 # Installation
-If you have installed a patched version of TORCS (which can be found on your path), set up a tournament by installing
+If you have installed a patched version of TORCS (which can be found on your path), set up the system by installing the required packages:
 
+```bash
+pip install -r requirements.txt
+```
 
 # Running the system
 To run a race make sure you have a `.yml` configuration file that satisfies your wishes (see [Configuration details](#configuration-details)) and run:
