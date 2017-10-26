@@ -1,4 +1,4 @@
-# torcs-server
+# TORCS Controller
 Install torcs and run tournaments using ELO rankings.
 
 Useful information can be found on [this blog](http://www.xed.ch/help/torcs.html).
@@ -19,8 +19,14 @@ To run a race make sure you have a `.yml` configuration file that satisfies your
 
 For more advanced command line options run `./torcs_tournament.py --help`.
 
+To use the example files, first **make sure the full path pointing to your copy of this repository does not contain any spaces**. Change the working directory of `player` in `example_players.yml` to point to somewhere you cloned [this python client](https://www.github.com/mpvharmelen/torcs-client) (or any other client that can be started using the start command specified in the [Configuration Details](#configuration-details)), `cd` to the root of this repository and run:
+
+```bash
+./torcs_tournament.py example_config.yml
+```
+
 # TORCS Installation
-First create a patched version of Torcs, by either finding readily patched source code or patching it yourself (see [Patching](#patching)).
+First make sure you have a patched version of torcs, by either finding readily patched source code or patching it yourself (see [Patching](#patching)).
 
 ## Easy
 Make sure you're using a patched version of TORCS 1.3.7 and place the zip (`torcs-1.3.7-patched.zip`) in the root of this repository. Now run `./easy-install.sh`. Done!
@@ -43,9 +49,9 @@ make datainstall
 ```
 
 ## Patching
-The course uses version 1.3.7. Patching this version, however, isn't tested. If you really want to patch your own TORCS installation instead of using the provided patched source for version 1.3.7, follow these instructions. These instructions are to patch the source of TORCS version 1.3.**4**. Try patching version 1.3.7 at your own risk 😊
+The computational intelligence course uses version 1.3.7. Patching this version, however, is **not** tested. If you really want to patch your own TORCS installation instead of using the provided patched source for version 1.3.7, follow these instructions. These instructions are to patch the source of TORCS version 1.3.**4**. Try patching version 1.3.7 at your own risk 😊
 
-To create your own patched version of Torcs, download version 1.3.4 (or 1.3.7 at your own risk) and [this patch](https://sourceforge.net/projects/cig/files/SCR%20Championship/Server%20Linux/2.1/) (linked from the [SCRC 2015 software page](http://cs.adelaide.edu.au/~optlog/SCR2015/software.html)).
+To create your own patched version of torcs, download version 1.3.4 (or 1.3.7 at your own risk) and [this patch](https://sourceforge.net/projects/cig/files/SCR%20Championship/Server%20Linux/2.1/) (linked from the [SCRC 2015 software page](http://cs.adelaide.edu.au/~optlog/SCR2015/software.html)).
 
 Unpack the TORCS source and the unpack the patch *inside* the source directory. `cd` to the patch directory (e.g. `cd torcs-1.3.4/scr-patch`) and run `sh ./do_patch.sh`.
 
@@ -62,8 +68,9 @@ The `.yml` files contain keyword arguments for the constructors of the `Player`,
 players:
     # All occurrences of `{port}` in `start_command` will be replaced by the
     # correct port before running the command. `start_command` is issued with
-    # `working_dir` as working directory and `process_owner` as user. If
-    # `process_owner` is not specified, `token` will be used.
+    # `working_dir` as working directory and, depending on the controller
+    # settings, with `process_owner` as user. If `process_owner` is not
+    # specified, `token` will be used.
     #
     # The filenames `stdout` and `stderr` are relative to `output_dir`.
 
@@ -88,7 +95,7 @@ rater:
     filename: <!path to the ratings file!>
     ignore_unknown_players: False
 controller:
-    # NB. The path full path to the TORCS config file may not contain spaces,
+    # NB. The full path to the TORCS config file may not contain spaces,
     #     even if you only specify a relative path.
     torcs_config_file: <!path to TORCS configuration file!>
     server_stdout: '{timestamp}-server_out.txt'
@@ -171,6 +178,6 @@ random_token6,400
 ```
 
 # TORCS configuration file
-The easiest way to create a TORCS configuration file is to start TORCS (run `torcs`) and configure a race using the UI. The configuration file can now be found under `~/.torcs/config/raceman/<name-of-race-type>.xml`.
+The easiest way to create a TORCS configuration file is to start TORCS (run `torcs`) and configure a race using the GUI. The configuration file can now be found under `~/.torcs/config/raceman/<name-of-race-type>.xml`.
 
-For the section `Drivers` the section numbering determines the racing order, while the `idx` attribute determines "which" SCR server is used, thus which port number is used. The SCR server uses port `300{idx}`, where `idx` ranges from 0 to 9.
+For the section `Drivers` the section numbering determines the racing order, while the `idx` attribute determines "which" SCR server is used, thus which port number is used. The SCR server uses port `300{idx+1}`, where `idx` ranges from 0 to 9.
