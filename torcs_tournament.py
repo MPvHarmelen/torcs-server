@@ -464,14 +464,20 @@ class Controller(object):
                     "This is a simulation! No child processes are started."
                 )
             else:
+                logger.debug(
+                    "TORCS config to use: {}".format(self.torcs_config_file)
+                )
                 config_file = os.path.abspath(self.torcs_config_file)
-                server_process = psutil.Popen(
-                    map(
-                        lambda s: s.format(
-                            config_file=config_file
-                        ),
-                        self.torcs_command
+                logger.debug("TORCS config to use: {}".format(config_file))
+                command = list(map(
+                    lambda s: s.format(
+                        config_file=config_file
                     ),
+                    self.torcs_command
+                ))
+                logger.debug("TORCS command to be run: {}".format(command))
+                server_process = psutil.Popen(
+                    command,
                     stdout=server_stdout,
                     stderr=server_stderr,
                 )
