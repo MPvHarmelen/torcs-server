@@ -111,10 +111,12 @@ controller:
     # Time to wait before checking all player processes are still alive when
     # starting a race
     crash_check_wait: 0.2
-    dropbox_start_command: ['dropbox', 'start']
+    # Whether to stop Dropbox before a race
+    stop_dropbox: True
     dropbox_stop_command: ['dropbox', 'stop']
     # Whether to start Dropbox again after a race
     start_dropbox: True
+    dropbox_start_command: ['dropbox', 'start']
 queue:
     # Filename used to check the last modified time, relative to
     # `Player.working_dir`.

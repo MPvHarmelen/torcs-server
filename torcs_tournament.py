@@ -863,10 +863,11 @@ class Controller(object):
 class DropboxDisablingController(Controller):
     def __init__(self, *args, dropbox_start_command=['dropbox', 'start'],
                  dropbox_stop_command=['dropbox', 'stop'], start_dropbox=True,
-                 **kwargs):
+                 stop_dropbox=True, **kwargs):
         self.dropbox_start_command = dropbox_start_command
         self.dropbox_stop_command = dropbox_stop_command
         self.start_dropbox = start_dropbox
+        self.stop_dropbox = stop_dropbox
         super(DropboxDisablingController, self).__init__(*args, **kwargs)
 
     def race_once(self, *args, **kwargs):
@@ -875,14 +876,17 @@ class DropboxDisablingController(Controller):
             # Try to disable Dropbox
             # The catch is that the return status of the Dropbox control script
             # is always 0, even if something went wrong...
-            logger.info("Stopping Dropbox...")
-            completed = subprocess.run(
-                self.dropbox_stop_command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            logger.info("Dropbox says:\n{}".format(completed.stdout.decode()))
-            del completed
+            if self.stop_dropbox:
+                logger.info("Stopping Dropbox...")
+                completed = subprocess.run(
+                    self.dropbox_stop_command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE
+                )
+                logger.info("Dropbox says:\n{}".format(
+                    completed.stdout.decode()
+                ))
+                del completed
 
             # Race
             return super(DropboxDisablingController, self).race_once(
@@ -995,13 +999,22 @@ if __name__ == '__main__':
         action='store_true',
         help="If given Dropbox will not be started again."
     )
+    parser.add_argument(
+        '--no-stop-dropbox',
+        action='store_true',
+        help="If given Dropbox will not be stopped."
+             " Implies --no-start-dropbox."
+    )
     args = parser.parse_args()
 
     # Initialise logging
     logging.basicConfig(level=args.level)
 
     extra_config = {}
-    if args.no_start_dropbox:
+    if args.no_stop_dropbox:
+        control_config = extra_config.setdefault('controller', {})
+        control_config['stop_dropbox'] = False
+    if args.no_start_dropbox or args.no_stop_dropbox:
         control_config = extra_config.setdefault('controller', {})
         control_config['start_dropbox'] = False
 
