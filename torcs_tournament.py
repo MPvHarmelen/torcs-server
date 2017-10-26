@@ -216,16 +216,20 @@ class Rater(object):
         In a ranking every player won from all players before it.
         """
         ranking = list(ranking)
+        # Calculate new ratings
         new_ratings = [
-            elo.rate(player.rating, [
-                ((pi < oi), opponent.rating)
-                for oi, opponent in enumerate(ranking)
-                if opponent is not player
+            elo.rate(
+                player.rating,
+                [
+                    ((pi < oi), opponent.rating)
+                    for oi, opponent in enumerate(ranking)
+                    if opponent is not player
                 ]
             )
             for pi, player in enumerate(ranking)
         ]
 
+        # Save new ratings
         for player, rating in zip(ranking, new_ratings):
             player.rating = rating
 
