@@ -28,10 +28,10 @@ To use the example files, first **make sure the full path pointing to your copy 
 # TORCS Installation
 First make sure you have a patched version of torcs, by either finding readily patched source code or patching it yourself (see [Patching](#patching)).
 
-## Easy
+## Easy installation
 Make sure you're using a patched version of TORCS 1.3.7 and place the zip (`torcs-1.3.7-patched.zip`) in the root of this repository. Now run `./easy-install.sh`. Done!
 
-## Manual
+## Manual installation
 Place the patched source code anywhere (just remember where) and `cd` into it.
 Run the following command to install the necessary requirements (taken from [this pdf](https://arxiv.org/pdf/1304.1672.pdf) and experience).
 
@@ -57,7 +57,7 @@ Unpack the TORCS source and the unpack the patch *inside* the source directory. 
 
 In the TORCS source, on line `373` of `torcs-1.3.4/src/drivers/olethros/geometry.cpp` add `std::` just before `isnan` (which is at position `17`). In programmer jargon: insert `std::` at `torcs-1.3.4/src/drivers/olethros/geometry.cpp:373:17`.
 
-That was it! Now follow the [manual installation instructions](#manual).
+That was it! Now follow the [manual installation instructions](#manual-installation).
 
 # Configuration details
 There are two types of configuration files: the `.yml` files are used by the Python application and the `.xml` files are used by TORCS. Only the `.yml` files are documented here.
