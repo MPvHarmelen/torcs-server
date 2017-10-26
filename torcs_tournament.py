@@ -875,8 +875,8 @@ class Controller(object):
 
 class DropboxDisablingController(Controller):
     def __init__(self, *args, dropbox_start_command=['dropbox', 'start'],
-                 dropbox_stop_command=['dropbox', 'stop'], start_dropbox=True,
-                 stop_dropbox=True, **kwargs):
+                 dropbox_stop_command=['dropbox', 'stop'], start_dropbox=False,
+                 stop_dropbox=False, **kwargs):
         self.dropbox_start_command = dropbox_start_command
         self.dropbox_stop_command = dropbox_stop_command
         self.start_dropbox = start_dropbox
@@ -1008,15 +1008,14 @@ if __name__ == '__main__':
         " May fail if no old TORCS output files are present in the expected"
         " directory.")
     parser.add_argument(
-        '--no-start-dropbox',
+        '--start-dropbox',
         action='store_true',
-        help="If given Dropbox will not be started again."
+        help="Start Dropbox again after the race."
     )
     parser.add_argument(
-        '--no-stop-dropbox',
+        '--stop-dropbox',
         action='store_true',
-        help="If given Dropbox will not be stopped."
-             " Implies --no-start-dropbox."
+        help="Stop Dropbox before the race. Implies --start-dropbox."
     )
     args = parser.parse_args()
 
@@ -1024,12 +1023,12 @@ if __name__ == '__main__':
     logging.basicConfig(level=args.level)
 
     extra_config = {}
-    if args.no_stop_dropbox:
+    if args.stop_dropbox:
         control_config = extra_config.setdefault('controller', {})
-        control_config['stop_dropbox'] = False
-    if args.no_start_dropbox or args.no_stop_dropbox:
+        control_config['stop_dropbox'] = True
+    if args.start_dropbox or args.stop_dropbox:
         control_config = extra_config.setdefault('controller', {})
-        control_config['start_dropbox'] = False
+        control_config['start_dropbox'] = True
 
     # Race
     # controller = Controller.load_config(args.config_file)

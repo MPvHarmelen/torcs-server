@@ -126,10 +126,10 @@ controller:
     # starting a race
     crash_check_wait: 0.2
     # Whether to stop Dropbox before a race
-    stop_dropbox: True
+    stop_dropbox: False
     dropbox_stop_command: ['dropbox', 'stop']
     # Whether to start Dropbox again after a race
-    start_dropbox: True
+    start_dropbox: False
     dropbox_start_command: ['dropbox', 'start']
 queue:
     # Filename used to check the last modified time, relative to
