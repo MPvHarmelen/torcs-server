@@ -542,9 +542,10 @@ class Controller(object):
             # Check no one crashed in the mean time
             for proc in processes:
                 if not really_running(proc):
+                    name = proc.name() if hasattr(proc, 'name') else proc
                     raise subprocess.CalledProcessError(
-                        proc.returncode,
-                        proc.args
+                        proc.poll() if hasattr(proc, 'poll') else 0,
+                        list(proc.args) or name
                     )
 
             # Wait for server
