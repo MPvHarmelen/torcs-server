@@ -250,7 +250,8 @@ class Controller(object):
                  server_stdout='{timestamp}-server_out.txt',
                  server_stderr='{timestamp}-server_err.txt',
                  separate_player_uid=False,
-                 set_file_ownership=False,
+                 set_file_owner=False,
+                 set_file_mode=False,
                  rater_backup_filename=None,
                  result_filename_format="{driver} - {base}",
                  timestamp_format='%Y-%m-%d-%H.%M',
@@ -272,7 +273,8 @@ class Controller(object):
                  torcs_min_time=1,
                  torcs_child_wait=0.5,
                  shutdown_wait=1,
-                 crash_check_wait=0.2):
+                 crash_check_wait=0.2,
+                 file_mode=0o700):
         """
         Orchestrate the races and save the ratings.
 
@@ -289,7 +291,8 @@ class Controller(object):
         self.server_stdout = server_stdout
         self.server_stderr = server_stderr
         self.separate_player_uid = separate_player_uid
-        self.set_file_ownership = set_file_ownership
+        self.set_file_owner = set_file_owner
+        self.set_file_mode = set_file_mode
         self.rater_backup_filename = rater_backup_filename
         self.result_filename_format = result_filename_format
         self.timestamp_format = timestamp_format
@@ -301,6 +304,7 @@ class Controller(object):
         self.torcs_child_wait = torcs_child_wait
         self.shutdown_wait = shutdown_wait
         self.crash_check_wait = crash_check_wait
+        self.file_mode = file_mode
         logger.debug("Result path: {}".format(self.result_path))
 
         # Read drivers from config
@@ -522,6 +526,13 @@ class Controller(object):
                 )
                 open_files.append(stderr)
 
+                # Set the ownership of the files
+                if self.set_file_owner:
+                    self.change_owner(player)
+
+                if self.set_file_mode:
+                    self.change_mode(player)
+
                 if simulate:
                     # Always simulate these functions, just to be sure they
                     # work
@@ -554,10 +565,6 @@ class Controller(object):
                         cwd=player.working_dir,
                     ))
                 logger.debug("Started {}".format(player))
-
-                # Set the ownership of the files
-                if self.set_file_ownership:
-                    self.change_owner(player)
 
             time.sleep(self.crash_check_wait)
 
@@ -749,6 +756,23 @@ class Controller(object):
                     pw_record.pw_uid,
                     pw_record.pw_gid
                 )
+
+    def change_mode(self, player, mode=None):
+        """
+        Make `player.process_owner` the owner of all files in
+        `player.working_dir`
+        """
+        if mode is None:
+            mode = self.file_mode
+        logger.debug(
+            "Changing file mode for {}".format(player.token)
+        )
+        for dirpath, _, filenames in os.walk(player.working_dir):
+            # Change directory mode
+            os.chmod(dirpath, mode)
+            # Change file mode
+            for filename in filenames:
+                os.chmod(os.path.join(dirpath, filename), mode)
 
     @staticmethod
     def get_change_user_fn(player):

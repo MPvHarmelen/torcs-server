@@ -96,14 +96,20 @@ players:
 rater:
     filename: <!path to the ratings file!>
     ignore_unknown_players: False
+queue:
+    # Filename used to check the last modified time, relative to
+    # `Player.working_dir`.
+    filename: start.sh
 controller:
     # NB. The full path to the TORCS config file may not contain spaces,
     #     even if you only specify a relative path.
     torcs_config_file: <!path to TORCS configuration file!>
     server_stdout: {timestamp}-server_out.txt
     server_stderr: {timestamp}-server_err.txt
+    # Whether to run each player process with their own UID
     separate_player_uid: False
-    set_file_ownership: False
+    set_file_owner: False
+    set_file_mode: False
     # If specified a backup of the ratings file will be made after the race
     rater_backup_filename: None
     result_filename_format: "{driver} - {base}"
@@ -134,16 +140,15 @@ controller:
     # Time to wait before checking all player processes are still alive when
     # starting a race
     crash_check_wait: 0.2
+    # File mode specified as (base ten) integer.
+    # Read, write, execute for owner only: 0o700 = 448
+    file_mode: 448
     # Whether to stop Dropbox before a race
     stop_dropbox: False
     dropbox_stop_command: ['dropbox', 'stop']
     # Whether to start Dropbox again after a race
     start_dropbox: False
     dropbox_start_command: ['dropbox', 'start']
-queue:
-    # Filename used to check the last modified time, relative to
-    # `Player.working_dir`.
-    filename: start.sh
 ```
 
 Instead of specifying the players in the main configuration file, the `players` key may also contain a path to a `.yml` file containing the player specification, e.g.:
