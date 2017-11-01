@@ -69,6 +69,7 @@ class Player(object):
                  stderr='./{timestamp}-stderr.txt',
                  message_file='./current_rating.txt',
                  rating_message="Your current rating is: {rating}",
+                 rank_message="You are ranked {rank} out of {total}",
                  process_owner=None):
         self.token = token
         self.working_dir = working_dir
@@ -82,6 +83,7 @@ class Player(object):
         self.stderr = path_rel_to_dir(stderr, self.output_dir)
         self.message_file = path_rel_to_dir(message_file, self.output_dir)
         self.rating_message = rating_message
+        self.rank_message = rank_message
         self.process_owner = process_owner \
             if process_owner is not None \
             else self.token
@@ -306,6 +308,17 @@ class Controller(object):
 
     def timestamp(self):
         return datetime.datetime.now().strftime(self.timestamp_format)
+
+    @staticmethod
+    def rank_text(rank):
+        if rank == 0:
+            return '1st'
+        elif rank == 1:
+            return '2nd'
+        elif rank == 2:
+            return '3rd'
+        else:
+            return str(rank + 1) + 'th'
 
     @staticmethod
     def read_ranking(results_file):
@@ -698,10 +711,24 @@ class Controller(object):
                 backup_filename
             )
 
-        # Tell players their own rating
-        for player in players:
+        # Tell players their own rating and rank
+        sorted_players = sorted(
+            self.rater.player_map.values(),
+            key=lambda p: p.rating,
+            reverse=True
+        )
+        total = len(sorted_players)
+        for rank, player in enumerate(sorted_players):
             with open(player.message_file, 'w') as fd:
                 fd.write(player.rating_message.format(rating=player.rating))
+                fd.write('\n')
+                fd.write(
+                    player.rank_message.format(
+                        rank=self.rank_text(rank),
+                        total=total
+                    )
+                )
+                fd.write('\n')
 
     def change_owner(self, player):
         """
