@@ -70,21 +70,20 @@ class Player(object):
                  process_owner=None):
         self.token = token
         self.working_dir = working_dir
-        self.start_command = start_command
-        self.stdout = stdout
-        self.stderr = stderr
-        self.process_owner = process_owner \
-            if process_owner is not None \
-            else self.token
-
-        self.output_dir = output_dir if os.path.isabs(output_dir) \
-            else os.path.join(self.working_dir, output_dir)
-        if not os.path.exists(self.output_dir):
-            os.mkdir(self.output_dir)
         if rating is not None:
             self.rating = elo.RATING_CLASS(rating)
         else:
             self.init_rating()
+        self.start_command = start_command
+        self.output_dir = path_rel_to_dir(output_dir, self.working_dir)
+        self.stdout = path_rel_to_dir(stdout, self.output_dir)
+        self.stderr = path_rel_to_dir(stderr, self.output_dir)
+        self.process_owner = process_owner \
+            if process_owner is not None \
+            else self.token
+
+        if not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
 
     def __str__(self):
         return self.__class__.__name__ + "({self.token!r}, " \
@@ -494,18 +493,12 @@ class Controller(object):
             logger.info("Starting players...")
             for driver, player in driver_to_player.items():
                 stdout = open(
-                    path_rel_to_dir(
-                        player.stdout.format(timestamp=self.timestamp()),
-                        player.output_dir
-                    ),
+                    player.stdout.format(timestamp=self.timestamp()),
                     'w'
                 )
                 open_files.append(stdout)
                 stderr = open(
-                    path_rel_to_dir(
-                        player.stderr.format(timestamp=self.timestamp()),
-                        player.output_dir
-                    ),
+                    player.stderr.format(timestamp=self.timestamp()),
                     'w'
                 )
                 open_files.append(stderr)
