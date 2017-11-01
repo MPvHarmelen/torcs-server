@@ -137,8 +137,8 @@ class Rater(object):
         if filename is None:
             if self.filename is None:
                 raise ValueError(
-                    "Please specify a filename as first argument or assign it "
-                    "to `self.filename`."
+                    "Please specify a filename as argument or assign it to"
+                    " `self.filename`."
                 )
             else:
                 filename = self.filename
