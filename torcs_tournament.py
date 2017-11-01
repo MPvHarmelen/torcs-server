@@ -67,6 +67,8 @@ class Player(object):
                  output_dir='./output/',
                  stdout='./{timestamp}-stdout.txt',
                  stderr='./{timestamp}-stderr.txt',
+                 message_file='./current_rating.txt',
+                 rating_message="Your current rating is: {rating}",
                  process_owner=None):
         self.token = token
         self.working_dir = working_dir
@@ -78,6 +80,8 @@ class Player(object):
         self.output_dir = path_rel_to_dir(output_dir, self.working_dir)
         self.stdout = path_rel_to_dir(stdout, self.output_dir)
         self.stderr = path_rel_to_dir(stderr, self.output_dir)
+        self.message_file = path_rel_to_dir(message_file, self.output_dir)
+        self.rating_message = rating_message
         self.process_owner = process_owner \
             if process_owner is not None \
             else self.token
@@ -99,6 +103,8 @@ class Player(object):
             "{self.output_dir!r}, " \
             "{self.stdout!r}, " \
             "{self.stderr!r}, " \
+            "{self.message_file!r}, " \
+            "{self.rating_message!r}, " \
             "{self.process_owner!r}" \
             ")".format(self=self)
 
@@ -691,6 +697,11 @@ class Controller(object):
             self.rater.save_ratings(
                 backup_filename
             )
+
+        # Tell players their own rating
+        for player in players:
+            with open(player.message_file, 'w') as fd:
+                fd.write(player.rating_message.format(rating=player.rating))
 
     def change_owner(self, player):
         """

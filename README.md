@@ -82,9 +82,11 @@ players:
         # player at the start of every run.
         rating: <see comment>
         start_command: ['./start.sh', '-p', '{port}']
-        output_dir: './output/'
-        stdout: './{timestamp}-stdout.txt'
-        stderr: './{timestamp}-stderr.txt'
+        output_dir: ./output/
+        stdout: ./{timestamp}-stdout.txt
+        stderr: ./{timestamp}-stderr.txt
+        message_file: ./current_rating.txt
+        rating_message: "Your current rating is: {rating}"
         process_owner: <the team token>
     <!a second team token!>:
         ...
@@ -98,15 +100,15 @@ controller:
     # NB. The full path to the TORCS config file may not contain spaces,
     #     even if you only specify a relative path.
     torcs_config_file: <!path to TORCS configuration file!>
-    server_stdout: '{timestamp}-server_out.txt'
-    server_stderr: '{timestamp}-server_err.txt'
+    server_stdout: {timestamp}-server_out.txt
+    server_stderr: {timestamp}-server_err.txt
     separate_player_uid: False
     set_file_ownership: False
     # If specified a backup of the ratings file will be made after the race
     rater_backup_filename: None
     result_filename_format: "{driver} - {base}"
-    timestamp_format: '%Y-%m-%d-%H.%M'
-    result_path: '~/.torcs/results/'
+    timestamp_format: %Y-%m-%d-%H.%M
+    result_path: ~/.torcs/results/
     torcs_command: ['torcs', '-r', '{config_file}']
     # Specifies which TORCS driver names correspond to which ports
     driver_to_port:
@@ -141,7 +143,7 @@ controller:
 queue:
     # Filename used to check the last modified time, relative to
     # `Player.working_dir`.
-    filename: 'start.sh'
+    filename: start.sh
 ```
 
 Instead of specifying the players in the main configuration file, the `players` key may also contain a path to a `.yml` file containing the player specification, e.g.:
