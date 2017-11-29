@@ -533,6 +533,18 @@ class Controller(object):
                 if self.set_file_mode:
                     self.change_mode(player)
 
+                start_command = list(map(
+                            lambda s: s.format(
+                                port=self.driver_to_port[driver]
+                            ),
+                            player.start_command
+                ))
+                logger.debug("Player start command: {}".format(start_command))
+                logger.debug("Player stdout: {}".format(stdout))
+                logger.debug("Player stderr: {}".format(stderr))
+                logger.debug("Player working_dir: {}".format(
+                    player.working_dir
+                ))
                 if simulate:
                     # Always simulate these functions, just to be sure they
                     # work
@@ -540,12 +552,7 @@ class Controller(object):
                     self.get_player_env(player)
                 elif self.separate_player_uid:
                     processes.append(psutil.Popen(
-                        map(
-                            lambda s: s.format(
-                                port=self.driver_to_port[driver]
-                            ),
-                            player.start_command
-                        ),
+                        start_command,
                         stdout=stdout,
                         stderr=stderr,
                         preexec_fn=self.get_change_user_fn(player),
@@ -554,12 +561,7 @@ class Controller(object):
                     ))
                 else:
                     processes.append(psutil.Popen(
-                        map(
-                            lambda s: s.format(
-                                port=self.driver_to_port[driver]
-                            ),
-                            player.start_command
-                        ),
+                        start_command,
                         stdout=stdout,
                         stderr=stderr,
                         cwd=player.working_dir,
