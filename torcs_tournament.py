@@ -263,6 +263,7 @@ class Controller(object):
                  separate_player_uid=False,
                  set_file_owner=False,
                  set_file_mode=False,
+                 max_attempts=None,
                  rater_backup_filename=None,
                  result_filename_format="{driver} - {base}",
                  timestamp_format='%Y-%m-%d-%H.%M',
@@ -304,6 +305,7 @@ class Controller(object):
         self.separate_player_uid = separate_player_uid
         self.set_file_owner = set_file_owner
         self.set_file_mode = set_file_mode
+        self.max_attempts = max_attempts or len(self.queue)
         self.rater_backup_filename = rater_backup_filename
         self.result_filename_format = result_filename_format
         self.timestamp_format = timestamp_format
@@ -493,14 +495,29 @@ class Controller(object):
 
         Automatically determine the number of players to be raced and ask the
         queue which players are next. Race the players, save the results and
-        update the queue.
+        update the queue. If a player crashes too quickly, the race will be
+        rerun with that player replaced.
         """
-        players = self.queue.first_n(len(self.drivers))
-        logger.info("Racing: {}".format(', '.join(
-            repr(player.token) for player in players
-        )))
-        self.race_once(players, simulate=simulate)
-        self.queue.requeue(players)
+        n_players_needed = len(self.drivers)
+        n_attempts = 0
+        success = False
+        while not success and n_attempts < self.max_attempts:
+            players = self.queue.first_n(n_players_needed)
+            logger.info("Racing: {}".format(', '.join(
+                repr(player.token) for player in players
+            )))
+            try:
+                self.race_once(players, simulate=simulate)
+            except PlayerCrashedError as e:
+                # Put the crashing player at the back of the queue
+                logger.warning(str(e))
+                self.queue.requeue(e.player)
+                n_attempts += 1
+            else:
+                success = True
+
+        for player in players:
+            self.queue.requeue(player)
 
     def race_tokens(self, tokens, simulate=False):
         return self.race_once(
@@ -587,7 +604,7 @@ class Controller(object):
             # Start players
             logger.info("Starting players...")
             for driver, player in driver_to_player.items():
-                self.start_player(player, driver, simulate)
+                self.start_player(player, driver, simulate=simulate)
 
             time.sleep(self.crash_check_wait)
 
@@ -684,9 +701,12 @@ class Controller(object):
                             "The following process could not be killed: {}"
                             .format(proc.cmdline())
                         )
+                self.server_processes = []
+                self.player_processes = []
 
             # Close all open files
-            for fd in self.open_files:
+            while self.open_files:
+                fd = self.open_files.pop()
                 logger.debug("Closing {}".format(fd.name))
                 try:
                     fd.close()
@@ -1031,6 +1051,9 @@ class FileBasedQueue(object):
         self.filename = filename
         self.players = list(players)
 
+    def __len__(self):
+        return len(self.players)
+
     @staticmethod
     def touch(filename):
         """
@@ -1067,15 +1090,13 @@ class FileBasedQueue(object):
             # reverse=True,
         )[:n]
 
-    def requeue(self, players):
+    def requeue(self, player):
         """
-        Put the given players at the end of the queue
+        Put the given player at the end of the queue
 
-        In this case this is done by touching their respective queue files
-        in the order the players are passed.
+        In this case this is done by touching its queue file.
         """
-        for player in players:
-            self.touch(self.get_filename(player))
+        self.touch(self.get_filename(player))
 
 
 def log_level_type(string):

@@ -110,6 +110,9 @@ controller:
     separate_player_uid: False
     set_file_owner: False
     set_file_mode: False
+    # The maximum number of times a race can be restarted with a different
+    # player because a player crashed too early
+    max_attempts: <the number of players>
     # If specified a backup of the ratings file will be made after the race
     rater_backup_filename: None
     result_filename_format: "{driver} - {base}"
