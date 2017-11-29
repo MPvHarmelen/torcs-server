@@ -7,14 +7,15 @@ import pwd
 import csv
 import time
 import shutil
-import psutil
 import pathlib
 import datetime
 import subprocess
+import itertools as it
 from collections import OrderedDict, abc
 
 import elo
 import yaml
+import psutil
 from bs4 import BeautifulSoup
 
 DROPBOX_DEBUG = logging.DEBUG - 1
@@ -47,6 +48,16 @@ OrderedLoader.add_constructor(
 
 class ParseError(Exception):
     pass
+
+
+class PlayerCrashedError(subprocess.CalledProcessError):
+    def __init__(self, player, returncode, cmd, **kwargs):
+        super(PlayerCrashedError, self).__init__(returncode, cmd, **kwargs)
+        self.player = player
+
+    def __str__(self):
+        return "The process {self.cmd} of {self.player.token} returned non" \
+            " zero exit code {self.returncode}".format(self=self)
 
 
 class Player(object):
@@ -310,6 +321,11 @@ class Controller(object):
         # Read drivers from config
         self.drivers = self.read_lineup(self.torcs_config_file)
 
+        # Keep track of running processes and open files
+        self.server_processes = []
+        self.player_processes = []
+        self.open_files = []
+
     def timestamp(self):
         return datetime.datetime.now().strftime(self.timestamp_format)
 
@@ -409,6 +425,61 @@ class Controller(object):
         """Restart the tournament, making all ratings equal."""
         self.rater.restart()
 
+    def start_player(self, player, driver, simulate=False):
+        """Start a player"""
+        stdout = open(
+            player.stdout.format(timestamp=self.timestamp()),
+            'w'
+        )
+        self.open_files.append(stdout)
+        stderr = open(
+            player.stderr.format(timestamp=self.timestamp()),
+            'w'
+        )
+        self.open_files.append(stderr)
+
+        # Set the ownership of the files
+        if self.set_file_owner:
+            self.change_owner(player)
+
+        if self.set_file_mode:
+            self.change_mode(player)
+
+        start_command = list(map(
+                    lambda s: s.format(
+                        port=self.driver_to_port[driver]
+                    ),
+                    player.start_command
+        ))
+        logger.debug("Player start command: {}".format(start_command))
+        logger.debug("Player stdout: {}".format(stdout))
+        logger.debug("Player stderr: {}".format(stderr))
+        logger.debug("Player working_dir: {}".format(
+            player.working_dir
+        ))
+        if simulate:
+            # Always simulate these functions, just to be sure they
+            # work
+            self.get_change_user_fn(player)
+            self.get_player_env(player)
+        elif self.separate_player_uid:
+            self.player_processes.append(psutil.Popen(
+                start_command,
+                stdout=stdout,
+                stderr=stderr,
+                preexec_fn=self.get_change_user_fn(player),
+                cwd=player.working_dir,
+                env=self.get_player_env(player)
+            ))
+        else:
+            self.player_processes.append(psutil.Popen(
+                start_command,
+                stdout=stdout,
+                stderr=stderr,
+                cwd=player.working_dir,
+            ))
+        logger.debug("Started {}".format(player))
+
     def race_and_save(self, simulate=False):
         """
         Run a race (see `Controller.race`) and save the ratings.
@@ -464,8 +535,9 @@ class Controller(object):
 
         driver_to_player = OrderedDict(zip(self.drivers, players))
 
-        open_files = []
-        processes = []
+        # This is done in __init__ now
+        # open_files = []
+        # processes = []
 
         try:
             # Start server
@@ -473,12 +545,12 @@ class Controller(object):
                 self.server_stdout.format(timestamp=self.timestamp()),
                 'w'
             )
-            open_files.append(server_stdout)
+            self.open_files.append(server_stdout)
             server_stderr = open(
                 self.server_stderr.format(timestamp=self.timestamp()),
                 'w'
             )
-            open_files.append(server_stderr)
+            self.open_files.append(server_stderr)
 
             logger.info("Starting TORCS...")
             if simulate:
@@ -503,81 +575,39 @@ class Controller(object):
                     stdout=server_stdout,
                     stderr=server_stderr,
                 )
-                processes.append(server_process)
+                self.server_processes.append(server_process)
 
                 # TORCS starts a child process, which doesn't terminate
                 # automatically if `server_process` is terminated or crashes.
                 time.sleep(self.torcs_child_wait)
                 children = server_process.children()
                 logger.debug("TORCS server children: {}".format(children))
-                processes.extend(children)
+                self.server_processes.extend(children)
 
             # Start players
             logger.info("Starting players...")
             for driver, player in driver_to_player.items():
-                stdout = open(
-                    player.stdout.format(timestamp=self.timestamp()),
-                    'w'
-                )
-                open_files.append(stdout)
-                stderr = open(
-                    player.stderr.format(timestamp=self.timestamp()),
-                    'w'
-                )
-                open_files.append(stderr)
-
-                # Set the ownership of the files
-                if self.set_file_owner:
-                    self.change_owner(player)
-
-                if self.set_file_mode:
-                    self.change_mode(player)
-
-                start_command = list(map(
-                            lambda s: s.format(
-                                port=self.driver_to_port[driver]
-                            ),
-                            player.start_command
-                ))
-                logger.debug("Player start command: {}".format(start_command))
-                logger.debug("Player stdout: {}".format(stdout))
-                logger.debug("Player stderr: {}".format(stderr))
-                logger.debug("Player working_dir: {}".format(
-                    player.working_dir
-                ))
-                if simulate:
-                    # Always simulate these functions, just to be sure they
-                    # work
-                    self.get_change_user_fn(player)
-                    self.get_player_env(player)
-                elif self.separate_player_uid:
-                    processes.append(psutil.Popen(
-                        start_command,
-                        stdout=stdout,
-                        stderr=stderr,
-                        preexec_fn=self.get_change_user_fn(player),
-                        cwd=player.working_dir,
-                        env=self.get_player_env(player)
-                    ))
-                else:
-                    processes.append(psutil.Popen(
-                        start_command,
-                        stdout=stdout,
-                        stderr=stderr,
-                        cwd=player.working_dir,
-                    ))
-                logger.debug("Started {}".format(player))
+                self.start_player(player, driver, simulate)
 
             time.sleep(self.crash_check_wait)
 
             # Check no one crashed in the mean time
-            for proc in processes:
+            player_and_process = zip(
+                driver_to_player.values(),
+                self.player_processes
+            )
+
+            for player, proc in player_and_process:
                 if not really_running(proc):
                     name = proc.name() if hasattr(proc, 'name') else proc
-                    raise subprocess.CalledProcessError(
-                        proc.poll() if hasattr(proc, 'poll') else 0,
+                    # Here I'm risking the bug of caching a cached TORCS and
+                    # signalling it was a crashed player.
+                    raise PlayerCrashedError(
+                        player,
+                        proc.poll() if hasattr(proc, 'poll') else 'Unknown',
                         list(proc.args) or name
                     )
+            del player_and_process
 
             # Wait for server
             logger.info("Waiting for TORCS to finish...")
@@ -625,6 +655,10 @@ class Controller(object):
                 # Wait a second to give the processes some time
                 time.sleep(self.shutdown_wait)
 
+                processes = list(it.chain(
+                    self.server_processes,
+                    self.player_processes
+                ))
                 # First be nice
                 for proc in processes:
                     if really_running(proc):
@@ -652,7 +686,7 @@ class Controller(object):
                         )
 
             # Close all open files
-            for fd in open_files:
+            for fd in self.open_files:
                 logger.debug("Closing {}".format(fd.name))
                 try:
                     fd.close()
@@ -981,7 +1015,9 @@ class DropboxDisablingController(Controller):
                     stdout=subprocess.PIPE,
                     stderr=stderr
                 )
-                logger.info("Dropbox says:\n{}".format(completed.stdout.decode()))
+                logger.info(
+                    "Dropbox says:\n{}".format(completed.stdout.decode())
+                )
                 del completed
 
 
