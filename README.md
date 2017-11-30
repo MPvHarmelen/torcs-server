@@ -113,6 +113,9 @@ controller:
     # The maximum number of times a race can be restarted with a different
     # player because a player crashed too early
     max_attempts: <the number of players>
+    # List of files to ensure exist _in all players working_dir_ before
+    # starting
+    ensure_existing: <[queue.filename]>
     # If specified a backup of the ratings file will be made after the race
     rater_backup_filename: None
     result_filename_format: "{driver} - {base}"
@@ -152,6 +155,13 @@ controller:
     # Whether to start Dropbox again after a race
     start_dropbox: False
     dropbox_start_command: ['dropbox', 'start']
+    # Content of automatically created files from `ensure_existing`
+    empty_start_sh: <"""
+#! /bin/bash
+echo "Exit with non-zero exit status because you don't have a working driver."
+echo "Yet... :)"
+exit 1
+""">
 ```
 
 Instead of specifying the players in the main configuration file, the `players` key may also contain a path to a `.yml` file containing the player specification, e.g.:

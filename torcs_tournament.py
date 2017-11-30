@@ -19,6 +19,12 @@ import psutil
 from bs4 import BeautifulSoup
 
 DROPBOX_DEBUG = logging.DEBUG - 1
+EMPTY_START_SH = """
+#! /bin/bash
+echo "Exit with non-zero exit status because you don't have a working driver."
+echo "Yet... :)"
+exit 1
+"""
 
 logger = logging.getLogger(None if __name__ == '__main__' else __name__)
 
@@ -264,6 +270,7 @@ class Controller(object):
                  set_file_owner=False,
                  set_file_mode=False,
                  max_attempts=None,
+                 ensure_existing=None,
                  rater_backup_filename=None,
                  result_filename_format="{driver} - {base}",
                  timestamp_format='%Y-%m-%d-%H.%M',
@@ -286,7 +293,8 @@ class Controller(object):
                  torcs_child_wait=0.5,
                  shutdown_wait=1,
                  crash_check_wait=0.2,
-                 file_mode=0o700):
+                 file_mode=0o700,
+                 empty_start_sh=None):
         """
         Orchestrate the races and save the ratings.
 
@@ -306,6 +314,10 @@ class Controller(object):
         self.set_file_owner = set_file_owner
         self.set_file_mode = set_file_mode
         self.max_attempts = max_attempts or len(self.queue)
+        # The following line assumes self.queue is a FileBasedQueue
+        self.ensure_existing = ensure_existing \
+            if ensure_existing is not None \
+            else [self.queue.filename]
         self.rater_backup_filename = rater_backup_filename
         self.result_filename_format = result_filename_format
         self.timestamp_format = timestamp_format
@@ -318,6 +330,9 @@ class Controller(object):
         self.shutdown_wait = shutdown_wait
         self.crash_check_wait = crash_check_wait
         self.file_mode = file_mode
+        self.empty_start_sh = empty_start_sh \
+            if empty_start_sh is not None \
+            else EMPTY_START_SH
         logger.debug("Result path: {}".format(self.result_path))
 
         # Read drivers from config
@@ -427,6 +442,14 @@ class Controller(object):
         """Restart the tournament, making all ratings equal."""
         self.rater.restart()
 
+    def create_in_workingdir(self, player, filename, content=None):
+        if content is None:
+            content = self.empty_start_sh
+        filename = os.path.join(player.working_dir, filename)
+        if not os.path.exists(filename):
+            with open(filename, 'w') as file:
+                file.write(content)
+
     def start_player(self, player, driver, simulate=False):
         """Start a player"""
         stdout = open(
@@ -498,6 +521,10 @@ class Controller(object):
         update the queue. If a player crashes too quickly, the race will be
         rerun with that player replaced.
         """
+        for player in self.queue.players:
+            for filename in self.ensure_existing:
+                self.create_in_workingdir(player, filename)
+
         n_players_needed = len(self.drivers)
         n_attempts = 0
         success = False
