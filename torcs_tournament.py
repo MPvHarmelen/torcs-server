@@ -417,7 +417,7 @@ class Controller(object):
 
         # I now have a list of (rank, id) pairs
         # Somehow, the number in the name of the scr_server driver is one
-        # larger that the `idx` of the driver.
+        # larger than the `idx` of the driver.
         return [
             'scr_server {}'.format(int(idx) + 1)
             for _, idx in sorted(drivers)
