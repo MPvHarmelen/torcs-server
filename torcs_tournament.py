@@ -613,7 +613,11 @@ class Controller(object):
                 driver_to_player.values(),
                 self.player_processes
             )
-
+            logger.debug(
+                "Player processes before checking: {}".format(
+                    self.player_processes
+                )
+            )
             for player, proc in player_and_process:
                 if not really_running(proc):
                     name = proc.name() if hasattr(proc, 'name') else proc
@@ -672,6 +676,11 @@ class Controller(object):
                 # Wait a second to give the processes some time
                 time.sleep(self.shutdown_wait)
 
+                logger.debug(
+                    "Player processes before stopping: {}".format(
+                        self.player_processes
+                    )
+                )
                 processes = list(it.chain(
                     self.server_processes,
                     self.player_processes
