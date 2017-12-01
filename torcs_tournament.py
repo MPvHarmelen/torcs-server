@@ -1030,7 +1030,7 @@ class DropboxDisablingController(Controller):
         self.stop_dropbox = stop_dropbox
         super(DropboxDisablingController, self).__init__(*args, **kwargs)
 
-    def race_once(self, *args, **kwargs):
+    def race(self, *args, **kwargs):
         """Disable Dropbox before racing and start it again afterwards."""
         try:
             # Try to disable Dropbox
@@ -1049,7 +1049,7 @@ class DropboxDisablingController(Controller):
                 del completed
 
             # Race
-            return super(DropboxDisablingController, self).race_once(
+            return super(DropboxDisablingController, self).race(
                 *args,
                 **kwargs
             )
