@@ -605,10 +605,6 @@ class Controller(object):
 
         driver_to_player = OrderedDict(zip(self.drivers, players))
 
-        # This is done in __init__ now
-        # open_files = []
-        # processes = []
-
         try:
             # Start server
             server_stdout = open(
@@ -786,7 +782,7 @@ class Controller(object):
                     )
                 )
 
-                # End of `finally` clause
+            # End of `finally` clause
 
         # Find the correct results file
         logger.debug("Result path: {}".format(self.result_path))
