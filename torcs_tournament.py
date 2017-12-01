@@ -652,7 +652,14 @@ class Controller(object):
 
             # Start players
             logger.info("Starting players...")
-            for driver, player in driver_to_player.items():
+            # If the race is retried several times because a player failed,
+            # the start of the queue will contain working players. To make
+            # sure these don't have to be started every time a new (possibly
+            # failing) player is tried, the players are started in reversed
+            # order. Like this the new player will be started first and can be
+            # "replaced" on fail without having to start all the working
+            # players.
+            for driver, player in reversed(driver_to_player.items()):
                 self.start_player(player, driver, simulate=simulate)
             del driver, player
 
