@@ -56,6 +56,10 @@ class ParseError(Exception):
     pass
 
 
+class NotEnoughWorkingPlayers(Exception):
+    pass
+
+
 class PlayerCrashedError(subprocess.CalledProcessError):
     def __init__(self, player, returncode, cmd, **kwargs):
         super(PlayerCrashedError, self).__init__(returncode, cmd, **kwargs)
@@ -562,9 +566,11 @@ class Controller(object):
                 n_attempts += 1
             else:
                 success = True
-
-        for player in players:
-            self.queue.requeue(player)
+        if success:
+            for player in players:
+                self.queue.requeue(player)
+        else:
+            raise NotEnoughWorkingPlayers("No race run.")
 
     def race_tokens(self, tokens, simulate=False):
         return self.race_once(
