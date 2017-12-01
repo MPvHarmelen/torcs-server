@@ -291,6 +291,7 @@ class Controller(object):
                  raise_on_too_fast_completion=True,
                  torcs_min_time=1,
                  torcs_child_wait=0.5,
+                 player_child_wait=0.5,
                  shutdown_wait=1,
                  crash_check_wait=0.2,
                  file_mode=0o700,
@@ -327,6 +328,7 @@ class Controller(object):
         self.raise_on_too_fast_completion = raise_on_too_fast_completion
         self.torcs_min_time = torcs_min_time
         self.torcs_child_wait = torcs_child_wait
+        self.player_child_wait = player_child_wait
         self.shutdown_wait = shutdown_wait
         self.crash_check_wait = crash_check_wait
         self.file_mode = file_mode
@@ -339,8 +341,14 @@ class Controller(object):
         self.drivers = self.read_lineup(self.torcs_config_file)
 
         # Keep track of running processes and open files
+        self.clear_processess()
+        self.clear_open_files()
+
+    def clear_processess(self):
         self.server_processes = []
-        self.player_processes = []
+        self.player_processes = {}
+
+    def clear_open_files(self):
         self.open_files = []
 
     def timestamp(self):
@@ -482,13 +490,14 @@ class Controller(object):
         logger.debug("Player working_dir: {}".format(
             player.working_dir
         ))
+        processes = []
         if simulate:
             # Always simulate these functions, just to be sure they
             # work
             self.get_change_user_fn(player)
             self.get_player_env(player)
         elif self.separate_player_uid:
-            self.player_processes.append(psutil.Popen(
+            processes.append(psutil.Popen(
                 start_command,
                 stdout=stdout,
                 stderr=stderr,
@@ -497,12 +506,23 @@ class Controller(object):
                 env=self.get_player_env(player)
             ))
         else:
-            self.player_processes.append(psutil.Popen(
+            processes.append(psutil.Popen(
                 start_command,
                 stdout=stdout,
                 stderr=stderr,
                 cwd=player.working_dir,
             ))
+
+        # Recursively add child processes
+        # This works because you can change a list while iterating over it.
+        # Like this we sleep too much (because I don't think we should wait
+        # for several child processes added at the same time), but this will
+        # probably not happen and otherwise just cost a few seconds.
+        for proc in processes:
+            time.sleep(self.player_child_wait)
+            processes.extend(proc.children())
+
+        self.player_processes[player.token] = processes
         logger.debug("Started {}".format(player))
 
     def race_and_save(self, simulate=False):
@@ -632,30 +652,24 @@ class Controller(object):
             logger.info("Starting players...")
             for driver, player in driver_to_player.items():
                 self.start_player(player, driver, simulate=simulate)
+            del driver, player
 
             time.sleep(self.crash_check_wait)
 
             # Check no one crashed in the mean time
-            player_and_process = zip(
-                driver_to_player.values(),
-                self.player_processes
-            )
-            logger.debug(
-                "Player processes before checking: {}".format(
-                    self.player_processes
-                )
-            )
-            for player, proc in player_and_process:
+            for token, procs in self.player_processes.items():
+                # The first process is the only one I'm checking. I shouldn't
+                # care if any child processes died.
+                proc = procs[0]
+                # If the following line fails then someone f*d up the players
+                player = next(p for p in players if p.token == token)
                 if not really_running(proc):
                     name = proc.name() if hasattr(proc, 'name') else proc
-                    # Here I'm risking the bug of caching a cached TORCS and
-                    # signalling it was a crashed player.
                     raise PlayerCrashedError(
                         player,
                         proc.poll() if hasattr(proc, 'poll') else 'Unknown',
                         list(proc.args) or name
                     )
-            del player_and_process
 
             # Wait for server
             logger.info("Waiting for TORCS to finish...")
@@ -710,7 +724,7 @@ class Controller(object):
                 )
                 processes = list(it.chain(
                     self.server_processes,
-                    self.player_processes
+                    *self.player_processes.values()
                 ))
                 # First be nice
                 for proc in processes:
@@ -737,8 +751,7 @@ class Controller(object):
                             "The following process could not be killed: {}"
                             .format(proc.cmdline())
                         )
-                self.server_processes = []
-                self.player_processes = []
+                self.clear_processess()
 
             # Close all open files
             while self.open_files:

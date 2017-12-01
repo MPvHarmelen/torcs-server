@@ -140,6 +140,8 @@ controller:
     torcs_min_time: 1
     # Time to wait after starting TORCS to ask for its child processes
     torcs_child_wait: 0.5
+    # Time to wait after starting player to ask for its child processes
+    player_child_wait: 0.5
     # Time to wait before terminating child processes in seconds
     # after a race and forcefully killing them after terminating them
     shutdown_wait: 1
